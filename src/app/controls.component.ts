@@ -24,6 +24,10 @@ import { DrawerDirectionType, SnapPoint } from './types';
             [class.active]="activeDirection === 'right'" 
             (click)="setDirection('right')"
           >Right</button>
+          <button 
+            [class.active]="activeDirection === 'top'" 
+            (click)="setDirection('top')"
+          >Top</button>
         </div>
       </div>
 

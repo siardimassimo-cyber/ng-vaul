@@ -6,7 +6,9 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed"
   },
   "private": true,
   "dependencies": {
@@ -26,6 +28,11 @@
     "@angular/build": "^21.1.1",
     "@angular/cli": "^21.1.1",
     "@angular/compiler-cli": "^21.1.1",
+    "@playwright/browser-chromium": "^1.58.0",
+    "@playwright/browser-firefox": "^1.58.0",
+    "@playwright/browser-webkit": "^1.58.0",
+    "@playwright/test": "^1.58.0",
+    "@types/node": "^25.0.10",
     "@vitest/coverage-v8": "^4.0.18",
     "jsdom": "^27.4.0",
     "typescript": "~5.9.3",
