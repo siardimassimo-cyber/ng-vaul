@@ -22,6 +22,7 @@ import { DrawerDirection, DrawerDirectionType } from './types';
       #overlayRef
       [attr.data-vaul-overlay]=""
       [attr.data-state]="(isOpen$ | async) ? 'open' : 'closed'"
+      (click)="close()"
       (pointerup)="onRelease($event)"
     ></div>
   `,
@@ -62,6 +63,10 @@ export class OverlayComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  close() {
+    this.drawerService.setIsOpen(false);
   }
 
   onRelease(event: PointerEvent) {
