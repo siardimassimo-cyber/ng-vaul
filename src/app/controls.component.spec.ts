@@ -14,10 +14,10 @@ describe('ControlsComponent', () => {
 
     fixture = TestBed.createComponent(ControlsComponent);
     component = fixture.componentInstance;
-    
+
     fixture.componentRef.setInput('direction', DrawerDirection.BOTTOM);
     fixture.componentRef.setInput('snapPoints', [0.5, 1]);
-    
+
     fixture.detectChanges();
   });
 

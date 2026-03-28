@@ -14,14 +14,12 @@ interface DrawerState {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class PositionFixedService {
   private readonly drawerService = inject(DrawerService);
   private readonly destroy$ = new Subject<void>();
-  private readonly activeUrl = new BehaviorSubject<string>(
-    typeof window !== 'undefined' ? window.location.href : ''
-  );
+  private readonly activeUrl = new BehaviorSubject<string>(typeof window !== 'undefined' ? window.location.href : '');
 
   constructor() {
     // Subscribe to drawer state changes
@@ -30,35 +28,39 @@ export class PositionFixedService {
       this.drawerService.nested$,
       this.drawerService.hasBeenOpened$,
       this.drawerService.modal$,
-      this.drawerService.noBodyStyles$
-    ]).pipe(
-      map(([isOpen, nested, hasBeenOpened, modal, noBodyStyles]): DrawerState => ({
-        isOpen,
-        nested,
-        hasBeenOpened,
-        modal,
-        noBodyStyles
-      })),
-      takeUntil(this.destroy$)
-    ).subscribe(state => {
-      if (!state.nested && state.hasBeenOpened) {
-        if (state.isOpen) {
-          // avoid for standalone mode (PWA)
-          const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-          if (!isStandalone) {
-            this.setPositionFixed(state.noBodyStyles);
-          }
+      this.drawerService.noBodyStyles$,
+    ])
+      .pipe(
+        map(
+          ([isOpen, nested, hasBeenOpened, modal, noBodyStyles]): DrawerState => ({
+            isOpen,
+            nested,
+            hasBeenOpened,
+            modal,
+            noBodyStyles,
+          }),
+        ),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((state) => {
+        if (!state.nested && state.hasBeenOpened) {
+          if (state.isOpen) {
+            // avoid for standalone mode (PWA)
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+            if (!isStandalone) {
+              this.setPositionFixed(state.noBodyStyles);
+            }
 
-          if (!state.modal) {
-            window.setTimeout(() => {
-              this.restorePositionSetting();
-            }, 500);
+            if (!state.modal) {
+              window.setTimeout(() => {
+                this.restorePositionSetting();
+              }, 500);
+            }
+          } else {
+            this.restorePositionSetting();
           }
-        } else {
-          this.restorePositionSetting();
         }
-      }
-    });
+      });
 
     // Track URL changes
     if (typeof window !== 'undefined') {
@@ -121,8 +123,7 @@ export class PositionFixedService {
 
       window.requestAnimationFrame(() => {
         const currentUrl = this.activeUrl.getValue();
-        if (this.drawerService.preventScrollRestoration() && 
-            currentUrl !== window.location.href) {
+        if (this.drawerService.preventScrollRestoration() && currentUrl !== window.location.href) {
           this.activeUrl.next(window.location.href);
           return;
         }
@@ -139,4 +140,4 @@ export class PositionFixedService {
     this.destroy$.complete();
     this.activeUrl.complete();
   }
-} 
+}

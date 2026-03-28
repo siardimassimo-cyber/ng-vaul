@@ -14,12 +14,12 @@ describe('ControlCenterComponent', () => {
 
     fixture = TestBed.createComponent(ControlCenterComponent);
     component = fixture.componentInstance;
-    
+
     // Set required inputs
     fixture.componentRef.setInput('isOpen', false);
     fixture.componentRef.setInput('direction', DrawerDirection.BOTTOM);
     fixture.componentRef.setInput('snapPoints', [0.4, 0.8, 1]);
-    
+
     fixture.detectChanges();
   });
 

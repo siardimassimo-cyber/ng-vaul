@@ -1,0 +1,18 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "diff",
+  "localEndpoint": "http://localhost:4200",
+  "executionArgs": {
+    "projectName": "ng-vaule",
+    "projectPath": "/Users/massimosiardi/Projects/ng-vaule",
+    "testIds": [],
+    "additionalInstruction": "CRITICAL: The Python test files in testsprite_tests/ already exist and contain correct, verified implementations. DO NOT regenerate, modify, or overwrite any existing .py test files. Execute each existing file exactly as it is on disk. The tests use page.evaluate() to click elements inside the fixed-position drawer, and page.keyboard.press('Escape') for keyboard events - these work correctly in Playwright and must be preserved.",
+    "serverMode": "development",
+    "envs": {
+      "API_KEY": "sk-user-7unlk6ht0hmnABWd04PTuzcRN8uWMwaGMg0yBcG8kXxN7PJcNC2gL_Ntj1TWFARkpP2LM8o2MWJ3nCTzLc7NpVaKffnnegk5cRCUwxdeA9eN4FxiF3Vx8HXnU-qB1Ds2NEc"
+    }
+  },
+  "serverPort": 50930,
+  "proxy": "http://6197b080-d743-428f-85e3-20cfb4b9df8a:cbJWfSgag6HiS3UgNSKaNb38Ew3WsrhC@tun.testsprite.com:8080"
+}

@@ -1,0 +1,74 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["@upstash/context7-mcp@latest"]
+    },
+    "gitlab": {
+      "type": "http",
+      "url": "${GITLAB_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${GITLAB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+    "linear": {
+      "type": "http",
+      "url": "${LINEAR_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${LINEAR_API_KEY}"
+      }
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["@supabase/supabase-mcp@latest"]
+    },
+    "firebase": {
+      "command": "npx",
+      "args": ["@firebase/firebase-mcp@latest"]
+    },
+    "slack": {
+      "type": "http",
+      "url": "${SLACK_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${SLACK_BOT_TOKEN}"
+      }
+    },
+    "asana": {
+      "type": "http",
+      "url": "${ASANA_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${ASANA_ACCESS_TOKEN}"
+      }
+    },
+    "stripe": {
+      "command": "npx",
+      "args": ["@stripe/stripe-mcp@latest"]
+    },
+    "greptile": {
+      "type": "http",
+      "url": "${GREPTILE_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${GREPTILE_API_KEY}"
+      }
+    },
+    "serena": {
+      "command": "npx",
+      "args": ["@serena/serena-mcp@latest"]
+    },
+    "laravel-boost": {
+      "command": "npx",
+      "args": ["@laravel/laravel-boost-mcp@latest"]
+    }
+  }
+}

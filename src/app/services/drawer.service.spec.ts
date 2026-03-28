@@ -1,283 +1,381 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach, beforeAll } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { DrawerService } from './drawer.service';
+import { DrawerStateService } from './drawer-state.service';
+import { DrawerDragService } from './drawer-drag.service';
+import { DrawerSnapService } from './drawer-snap.service';
+import { DrawerDomService } from './drawer-dom.service';
 import { DrawerDirection } from '../types';
-import { DRAG_CLASS } from './constants';
+import { createMockHTMLElement, setupDrawerDOM } from './__mocks__/dom-helpers.mock';
 
-describe('DrawerService', () => {
+describe('DrawerService (Facade)', () => {
   let service: DrawerService;
+  let stateService: DrawerStateService;
+  let dragService: DrawerDragService;
+  let snapService: DrawerSnapService;
+  let domService: DrawerDomService;
+  let mockDrawer: HTMLDivElement;
+  let domSetup: { wrapper: HTMLElement; cleanup: () => void };
+
+  beforeAll(() => {
+    TestBed.configureTestingModule({
+      providers: [DrawerService, DrawerStateService, DrawerDragService, DrawerSnapService, DrawerDomService],
+    });
+  });
 
   beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [DrawerService]
-    });
     service = TestBed.inject(DrawerService);
+    stateService = TestBed.inject(DrawerStateService);
+    dragService = TestBed.inject(DrawerDragService);
+    snapService = TestBed.inject(DrawerSnapService);
+    domService = TestBed.inject(DrawerDomService);
+    mockDrawer = createMockHTMLElement();
+    domSetup = setupDrawerDOM();
   });
 
-  it('should be created', () => {
-    expect(service).toBeTruthy();
+  afterEach(() => {
+    service.ngOnDestroy();
+    stateService.ngOnDestroy();
+    dragService.ngOnDestroy();
+    snapService.ngOnDestroy();
+    domSetup.cleanup();
   });
 
-  it('should have initial state as closed', () => {
-    expect(service.isOpen$.value).toBe(false);
-  });
-
-  it('should set direction correctly', () => {
-    service.setDirection(DrawerDirection.LEFT);
-    expect(service.direction$.value).toBe(DrawerDirection.LEFT);
-  });
-
-  it('should toggle open/close state', () => {
-    service.setIsOpen(true);
-    expect(service.isOpen$.value).toBe(true);
-    expect(service.hasBeenOpened$.value).toBe(true);
-    service.setIsOpen(false);
-    expect(service.isOpen$.value).toBe(false);
-  });
-
-  it('should set dragging state', () => {
-    service.setIsDragging(true);
-    expect(service.isDragging$.value).toBe(true);
-    service.setIsDragging(false);
-    expect(service.isDragging$.value).toBe(false);
-  });
-
-  it('should set drawer ref and initial transform', () => {
-    const mockDrawer = {
-      getBoundingClientRect: () => ({ height: 500, width: 300 }),
-      style: { transform: '' }
-    } as any;
-    service.setDirection(DrawerDirection.BOTTOM);
-    service.setDrawerRef(mockDrawer);
-    expect(service.drawerRef$.value).toBe(mockDrawer);
-    expect(mockDrawer.style.transform).toBe('translateY(500px)');
-  });
-
-  it('should set overlay ref', () => {
-    const mockOverlay = {} as any;
-    service.setOverlayRef(mockOverlay);
-    expect(service.overlayRef$.value).toBe(mockOverlay);
-  });
-
-  describe('Snap Points', () => {
-    it('should calculate percentage offsets for BOTTOM direction', () => {
-      const mockDrawer = {
-        getBoundingClientRect: () => ({ height: 500, width: 300 }),
-        style: {}
-      } as any;
-      service.setDrawerRef(mockDrawer);
-      service.setDirection(DrawerDirection.BOTTOM);
-      service.snapPoints$.next([0.5, 1]);
-
-      const offsets = service.getSnapPointsOffset();
-      expect(offsets).toEqual([250, 0]);
+  describe('Initialization', () => {
+    it('should be created', () => {
+      expect(service).toBeTruthy();
     });
 
-    it('should calculate pixel offsets for RIGHT direction', () => {
-      const mockDrawer = {
-        getBoundingClientRect: () => ({ height: 500, width: 400 }),
-        style: {}
-      } as any;
-      service.setDrawerRef(mockDrawer);
-      service.setDirection(DrawerDirection.RIGHT);
-      service.snapPoints$.next(['100px', '300px']);
-
-      const offsets = service.getSnapPointsOffset();
-      expect(offsets).toEqual([300, 100]);
+    it('should have initial closed state', () => {
+      expect(service.isOpen$.value).toBe(false);
+      expect(service.isDragging$.value).toBe(false);
     });
 
-    it('should return empty offsets if no snap points or drawer', () => {
-      expect(service.getSnapPointsOffset()).toEqual([]);
-      service.snapPoints$.next([0.5]);
-      expect(service.getSnapPointsOffset()).toEqual([]);
+    it('should have default direction BOTTOM', () => {
+      expect(service.direction$.value).toBe(DrawerDirection.BOTTOM);
     });
   });
 
-  describe('Getters and Setters for Flags', () => {
-    it('should manage shouldScaleBackground', () => {
-      service.setScaleBackground(true);
-      expect(service.shouldScaleBackground()).toBe(true);
-      service.setScaleBackground(false);
-      expect(service.shouldScaleBackground()).toBe(false);
+  describe('State Management (Delegates to DrawerStateService)', () => {
+    it('should delegate setIsOpen to state service', () => {
+      const spy = vi.spyOn(stateService, 'setIsOpen');
+      service.setIsOpen(true);
+      expect(spy).toHaveBeenCalledWith(true);
     });
 
-    it('should manage setBackgroundColor', () => {
-      service.setBackgroundColor(true);
-      expect(service.setBackgroundColorOnScale()).toBe(true);
+    it('should delegate setDirection to state service', () => {
+      const spy = vi.spyOn(stateService, 'setDirection');
+      service.setDirection(DrawerDirection.LEFT);
+      expect(spy).toHaveBeenCalledWith(DrawerDirection.LEFT);
     });
 
-    it('should manage setNoBodyStyles', () => {
-      service.setNoBodyStyles(true);
-      expect(service.noBodyStyles()).toBe(true);
+    it('should delegate setIsDragging to state service', () => {
+      const spy = vi.spyOn(stateService, 'setIsDragging');
+      service.setIsDragging(true);
+      expect(spy).toHaveBeenCalledWith(true);
     });
 
-    it('should manage nested', () => {
-      service.setNested(true);
-      expect(service.nested()).toBe(true);
+    it('should expose isOpen$ from state service', () => {
+      expect(service.isOpen$).toBe(stateService.isOpen$);
     });
 
-    it('should manage modal', () => {
-      service.setModal(true);
-      expect(service.modal()).toBe(true);
+    it('should expose direction$ from state service', () => {
+      expect(service.direction$).toBe(stateService.direction$);
     });
 
-    it('should manage hasBeenOpened', () => {
-      service.setHasBeenOpened(true);
-      expect(service.hasBeenOpened()).toBe(true);
+    it('should expose isDragging$ from state service', () => {
+      expect(service.isDragging$).toBe(stateService.isDragging$);
     });
 
-    it('should manage preventScrollRestoration', () => {
-      service.setPreventScrollRestoration(true);
-      expect(service.preventScrollRestoration()).toBe(true);
+    it('should expose drawerRef$ from state service', () => {
+      expect(service.drawerRef$).toBe(stateService.drawerRef$);
+    });
+
+    it('should expose hasBeenOpened$ from state service', () => {
+      expect(service.hasBeenOpened$).toBe(stateService.hasBeenOpened$);
+    });
+
+    describe('Flag Getters/Setters', () => {
+      it('should delegate shouldScaleBackground operations', () => {
+        service.setScaleBackground(true);
+        expect(service.shouldScaleBackground()).toBe(true);
+        service.setScaleBackground(false);
+        expect(service.shouldScaleBackground()).toBe(false);
+      });
+
+      it('should delegate modal flag', () => {
+        service.setModal(true);
+        expect(service.modal()).toBe(true);
+      });
+
+      it('should delegate nested flag', () => {
+        service.setNested(true);
+        expect(service.nested()).toBe(true);
+      });
+
+      it('should delegate noBodyStyles flag', () => {
+        service.setNoBodyStyles(true);
+        expect(service.noBodyStyles()).toBe(true);
+      });
+
+      it('should delegate preventScrollRestoration flag', () => {
+        service.setPreventScrollRestoration(true);
+        expect(service.preventScrollRestoration()).toBe(true);
+      });
+
+      it('should delegate hasBeenOpened flag', () => {
+        service.setHasBeenOpened(true);
+        expect(service.hasBeenOpened()).toBe(true);
+      });
+
+      it('should delegate backgroundColorOnScale flag', () => {
+        service.setBackgroundColor(true);
+        expect(service.setBackgroundColorOnScale()).toBe(true);
+      });
     });
   });
 
-  describe('Event Handlers', () => {
-    it('should handle onPress', () => {
+  describe('Drag Methods (Delegates to DrawerDragService)', () => {
+    it('should delegate onPress to drag service', () => {
+      const spy = vi.spyOn(dragService, 'onPress').mockImplementation(() => {});
       const mockElement = document.createElement('div');
-      const event = {
-        clientX: 100,
-        clientY: 200,
-        pointerId: 1,
-        target: mockElement
-      } as any;
-      
-      mockElement.setPointerCapture = vi.fn();
-      
+      const event = new PointerEvent('pointerdown');
       service.onPress(event, mockElement);
-      
-      expect(service.dragStartPosition$.value).toEqual({ x: 100, y: 200 });
-      expect(mockElement.setPointerCapture).toHaveBeenCalledWith(1);
+      expect(spy).toHaveBeenCalledWith(event, mockElement);
     });
 
-    it('should handle onDrag when dragging', () => {
+    it('should delegate onDrag to drag service', () => {
+      const spy = vi.spyOn(dragService, 'onDrag').mockImplementation(() => {});
       const mockElement = document.createElement('div');
-      const mockWrapper = document.createElement('div');
-      mockWrapper.setAttribute('data-vaul-drawer-wrapper', '');
-      document.body.appendChild(mockWrapper);
-      
-      service.setDirection(DrawerDirection.BOTTOM);
-      service.setIsDragging(true);
-      service.dragStartPosition$.next({ x: 0, y: 0 });
-      service.pointerStart$.next({ x: 0, y: 0 });
-      service.isAllowedToDrag$.next(true);
-
-      const event = { clientX: 0, clientY: 100, target: mockElement } as any;
-      service.onDrag(event, mockElement);
-
-      expect(service.currentPointerPositionObs$).toBeDefined();
-      expect(mockElement.style.transform).toContain('translate3d(0, 100px, 0)');
-      
-      document.body.removeChild(mockWrapper);
+      const event = new PointerEvent('pointermove');
+      service.onDrag(event, mockElement, true);
+      expect(spy).toHaveBeenCalledWith(event, mockElement, true);
     });
 
-    it('should terminate drag onDrag if buttons are 0', () => {
+    it('should delegate onRelease to drag service', () => {
+      const spy = vi.spyOn(dragService, 'onRelease');
       const mockElement = document.createElement('div');
-      service.setIsDragging(true);
-      const spy = vi.spyOn(service, 'onRelease');
-      
-      const event = new PointerEvent('pointermove', { buttons: 0 });
-      service.onDrag(event, mockElement);
-      
+      const event = new PointerEvent('pointerup');
+      service.onRelease(event, DrawerDirection.BOTTOM, mockElement);
+      expect(spy).toHaveBeenCalledWith(event, DrawerDirection.BOTTOM, mockElement);
+    });
+
+    it('should delegate shouldDrag to drag service', () => {
+      const spy = vi.spyOn(dragService, 'shouldDrag');
+      const mockElement = document.createElement('div');
+      service.shouldDrag(mockElement, true);
+      expect(spy).toHaveBeenCalledWith(mockElement, true);
+    });
+
+    it('should delegate resetDrawer to drag service', () => {
+      const spy = vi.spyOn(dragService, 'resetDrawer');
+      const mockElement = document.createElement('div');
+      service.resetDrawer(DrawerDirection.BOTTOM, mockElement);
+      expect(spy).toHaveBeenCalledWith(DrawerDirection.BOTTOM, mockElement);
+    });
+
+    it('should delegate closeDrawer to drag service', () => {
+      const spy = vi.spyOn(dragService, 'closeDrawer');
+      const mockElement = document.createElement('div');
+      service.closeDrawer(mockElement);
+      expect(spy).toHaveBeenCalledWith(mockElement);
+    });
+
+    it('should expose pointerStart$ from drag service', () => {
+      expect(service.pointerStart$).toBe(dragService.pointerStart$);
+    });
+
+    it('should expose dragStartPosition$ from drag service', () => {
+      expect(service.dragStartPosition$).toBe(dragService.dragStartPosition$);
+    });
+
+    it('should expose isAllowedToDrag$ from drag service', () => {
+      expect(service.isAllowedToDrag$).toBe(dragService.isAllowedToDrag$);
+    });
+  });
+
+  describe('Snap Methods (Delegates to DrawerSnapService)', () => {
+    it('should delegate getSnapPointsOffset to snap service', () => {
+      const spy = vi.spyOn(snapService, 'getSnapPointsOffset');
+      service.getSnapPointsOffset();
       expect(spy).toHaveBeenCalled();
     });
 
-    it('should handle onRelease with high velocity', () => {
-      const mockElement = document.createElement('div');
-      Object.defineProperty(mockElement, 'offsetHeight', { value: 500 });
-      
-      service.setDirection(DrawerDirection.BOTTOM);
-      service.setIsDragging(true);
-      service.dragStartTime$.next(new Date(Date.now() - 50)); // 50ms ago
-      service.dragStartPosition$.next({ x: 0, y: 0 });
-      
-      const event = { clientX: 0, clientY: 100 } as any; // Moved 100px
-      const snapSpy = vi.spyOn(service as any, 'snapToPoint');
-      
-      service.snapPoints$.next([0.5, 1]); // Snap points at 250px and 0px offset
-      service.activeSnapPoint$.next(0.5);
-      
-      // Velocity = 100 / 50 = 2.0 (Threshold is 0.4)
-      service.onRelease(event, DrawerDirection.BOTTOM, mockElement);
-      
-      expect(service.isDragging$.value).toBe(false);
-      expect(snapSpy).toHaveBeenCalled();
+    it('should delegate goToAdjacentSnap to snap service', () => {
+      const spy = vi.spyOn(snapService, 'goToAdjacentSnap');
+      service.goToAdjacentSnap(1);
+      expect(spy).toHaveBeenCalledWith(1);
+    });
+
+    it('should expose snapPoints$ from snap service', () => {
+      expect(service.snapPoints$).toBe(snapService.snapPoints$);
+    });
+
+    it('should expose activeSnapPoint$ from snap service', () => {
+      expect(service.activeSnapPoint$).toBe(snapService.activeSnapPoint$);
+    });
+
+    it('should expose activeSnapPointIndex$ from snap service', () => {
+      expect(service.activeSnapPointIndex$).toBe(snapService.activeSnapPointIndex$);
     });
   });
 
-  describe('shouldDrag Logic', () => {
-    it('should not drag if element is a SELECT', () => {
-      const el = document.createElement('select');
-      expect(service.shouldDrag(el, false)).toBe(false);
-    });
-
-    it('should not drag if element has data-vaul-no-drag', () => {
-      const el = document.createElement('div');
-      el.setAttribute('data-vaul-no-drag', '');
-      expect(service.shouldDrag(el, false)).toBe(false);
-    });
-
-    it('should drag if element is a dialog and scrolled to top', () => {
-      const el = document.createElement('div');
-      el.setAttribute('role', 'dialog');
-      Object.defineProperty(el, 'scrollHeight', { value: 1000 });
-      Object.defineProperty(el, 'clientHeight', { value: 500 });
-      Object.defineProperty(el, 'scrollTop', { value: 0 });
-
-      expect(service.shouldDrag(el, false)).toBe(true);
-    });
-
-    it('should not drag if element is scrolled down', () => {
-      const el = document.createElement('div');
-      Object.defineProperty(el, 'scrollHeight', { value: 1000 });
-      Object.defineProperty(el, 'clientHeight', { value: 500 });
-      Object.defineProperty(el, 'scrollTop', { value: 10 });
-
-      expect(service.shouldDrag(el, false)).toBe(false);
-    });
-  });
-
-  describe('Helper Methods', () => {
-    it('should calculate translate based on direction', () => {
-      const mockDrawer = { offsetHeight: 500, offsetWidth: 300 } as any;
-      
-      expect(service.getTranslateBasedOnDirection({ drawer: mockDrawer, direction: DrawerDirection.BOTTOM })).toBe(500);
-      expect(service.getTranslateBasedOnDirection({ drawer: mockDrawer, direction: DrawerDirection.TOP })).toBe(-500);
-      expect(service.getTranslateBasedOnDirection({ drawer: mockDrawer, direction: DrawerDirection.LEFT })).toBe(-300);
-      expect(service.getTranslateBasedOnDirection({ drawer: mockDrawer, direction: DrawerDirection.RIGHT })).toBe(300);
-    });
-
-    it('should calculate scale', () => {
-      const originalInnerWidth = window.innerWidth;
-      (window as any).innerWidth = 1000;
-      // WINDOW_TOP_OFFSET is 26
-      expect(service.getScale()).toBe((1000 - 26) / 1000);
-      (window as any).innerWidth = originalInnerWidth;
-    });
-  });
-
-  describe('Actions', () => {
-    it('should close drawer and cancel drag', () => {
+  describe('DOM Methods (Delegates to DrawerDomService)', () => {
+    it('should delegate getTranslateBasedOnDirection to dom service', () => {
+      const spy = vi.spyOn(domService, 'getTranslateBasedOnDirection');
       const mockDrawer = document.createElement('div');
-      mockDrawer.classList.add(DRAG_CLASS);
-      service.setIsDragging(true);
-      service.setIsOpen(true);
-      
-      service.closeDrawer(mockDrawer);
-      
-      expect(service.isOpen$.value).toBe(false);
-      expect(service.isDragging$.value).toBe(false);
-      expect(mockDrawer.classList.contains(DRAG_CLASS)).toBe(false);
+      service.getTranslateBasedOnDirection({ drawer: mockDrawer, direction: DrawerDirection.BOTTOM });
+      expect(spy).toHaveBeenCalledWith({ drawer: mockDrawer, direction: DrawerDirection.BOTTOM });
+    });
+
+    it('should delegate getScale to dom service', () => {
+      const spy = vi.spyOn(domService, 'getScale');
+      service.getScale();
+      expect(spy).toHaveBeenCalled();
     });
   });
 
-  it('should clean up on destroy', () => {
-    const nextSpy = vi.spyOn((service as any).destroy$, 'next');
-    const completeSpy = vi.spyOn((service as any).destroy$, 'complete');
-    
-    service.ngOnDestroy();
-    
-    expect(nextSpy).toHaveBeenCalled();
-    expect(completeSpy).toHaveBeenCalled();
+  describe('Drawer Ref Setup', () => {
+    it('should set drawer ref and apply initial hidden transform for BOTTOM direction', () => {
+      const ref = createMockHTMLElement({ offsetHeight: 500, offsetWidth: 300 });
+      service.setDirection(DrawerDirection.BOTTOM);
+      service.setDrawerRef(ref);
+      expect(service.drawerRef$.value).toBe(ref);
+      expect(ref.style.transform).toBe('translateY(500px)');
+    });
+
+    it('should set drawer ref and apply initial hidden transform for TOP direction', () => {
+      const ref = createMockHTMLElement({ offsetHeight: 400 });
+      service.setDirection(DrawerDirection.TOP);
+      service.setDrawerRef(ref);
+      expect(ref.style.transform).toBe('translateY(-400px)');
+    });
+
+    it('should set drawer ref and apply initial hidden transform for LEFT direction', () => {
+      const ref = createMockHTMLElement({ offsetWidth: 300 });
+      service.setDirection(DrawerDirection.LEFT);
+      service.setDrawerRef(ref);
+      expect(ref.style.transform).toBe('translateX(-300px)');
+    });
+
+    it('should set drawer ref and apply initial hidden transform for RIGHT direction', () => {
+      const ref = createMockHTMLElement({ offsetWidth: 350 });
+      service.setDirection(DrawerDirection.RIGHT);
+      service.setDrawerRef(ref);
+      expect(ref.style.transform).toBe('translateX(350px)');
+    });
+
+    it('should allow setting drawer ref to null', () => {
+      service.setDrawerRef(null);
+      expect(service.drawerRef$.value).toBeNull();
+    });
+  });
+
+  describe('Overlay Ref Setup', () => {
+    it('should set overlay ref', () => {
+      const mockOverlay = document.createElement('div');
+      service.setOverlayRef(mockOverlay);
+      expect(service.overlayRef$.value).toBe(mockOverlay);
+    });
+
+    it('should allow setting overlay ref to null', () => {
+      service.setOverlayRef(null);
+      expect(service.overlayRef$.value).toBeNull();
+    });
+
+    it('should expose overlayRef$ from state service', () => {
+      expect(service.overlayRef$).toBe(stateService.overlayRef$);
+    });
+  });
+
+  describe('Constructor Initialization', () => {
+    it('should apply hidden transform when drawer ref is registered and drawer is closed', () => {
+      return new Promise<void>((resolve) => {
+        service.setDirection(DrawerDirection.BOTTOM);
+
+        service.drawerRefObs$.subscribe(() => {
+          if (service.drawerRef$.value && !service.isOpen$.value) {
+            expect(service.drawerRef$.value.style.transform).toBe('translateY(500px)');
+            resolve();
+          }
+        });
+
+        service.setDrawerRef(mockDrawer);
+      });
+    });
+
+    it('should sync drawer position when opening with snap points', () => {
+      return new Promise<void>((resolve) => {
+        service.setDirection(DrawerDirection.BOTTOM);
+        service.setDrawerRef(mockDrawer);
+
+        snapService.snapPoints$.next([0.5, 1]);
+        snapService.activeSnapPoint$.next(0.5);
+
+        service.isOpen$.subscribe(() => {
+          if (service.isOpen$.value) {
+            expect(service.isOpen$.value).toBe(true);
+            resolve();
+          }
+        });
+
+        service.setIsOpen(true);
+      });
+    });
+  });
+
+  describe('drawerTransform$ Observable', () => {
+    it('should emit null when drawer ref is not set', () => {
+      let result: string | null = undefined as any;
+      service.drawerTransform$.subscribe((v) => (result = v)).unsubscribe();
+      expect(result).toBeNull();
+    });
+
+    it('should compute vertical transform when drawer is set and not dragging', () => {
+      service.setDirection(DrawerDirection.BOTTOM);
+      service.setDrawerRef(mockDrawer);
+      let result: string | null = null;
+      service.drawerTransform$.subscribe((v) => (result = v)).unsubscribe();
+      expect(result).toContain('translateY');
+    });
+
+    it('should compute horizontal transform when drawer is set and not dragging', () => {
+      service.setDirection(DrawerDirection.RIGHT);
+      service.setDrawerRef(mockDrawer);
+      let result: string | null = null;
+      service.drawerTransform$.subscribe((v) => (result = v)).unsubscribe();
+      expect(result).toContain('translateX');
+    });
+  });
+
+  describe('Lifecycle', () => {
+    it('should complete observables on destroy', () => {
+      service.isOpen$.subscribe({ complete: vi.fn() });
+      service.ngOnDestroy();
+      expect(() => service.ngOnDestroy()).not.toThrow();
+    });
+  });
+
+  describe('Full Workflows', () => {
+    it('should open drawer and sync to first snap point', () => {
+      const ref = createMockHTMLElement({ offsetHeight: 500, offsetWidth: 300 });
+      service.setDirection(DrawerDirection.BOTTOM);
+      service.setDrawerRef(ref);
+      snapService.snapPoints$.next([0.4, 0.8, 1]);
+
+      service.setIsOpen(true);
+
+      expect(service.isOpen$.value).toBe(true);
+      expect(service.hasBeenOpened$.value).toBe(true);
+    });
+
+    it('should toggle between open and closed states', () => {
+      service.setIsOpen(true);
+      expect(service.isOpen$.value).toBe(true);
+
+      service.setIsOpen(false);
+      expect(service.isOpen$.value).toBe(false);
+      expect(service.hasBeenOpened$.value).toBe(true);
+    });
   });
 });
