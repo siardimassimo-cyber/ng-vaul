@@ -20,23 +20,24 @@ import { HandleComponent } from './handle.component';
 import { isIOS, isMobileFirefox } from './services/browser';
 import { BORDER_RADIUS, DRAG_CLASS, TRANSITIONS, WINDOW_TOP_OFFSET } from './services/constants';
 import { DrawerService } from './services/drawer.service';
-import { assignStyle, chain, isInput, isVertical, set } from './services/helpers';
 import { PreventScrollService } from './services/prevent-scroll.service';
 import { ScaleBackgroundService } from './services/scale-background.service';
 import { DrawerDirection, DrawerDirectionType, SnapPoint } from './types';
+import { assignStyle, chain, isInput, isVertical, set } from './utils/helpers';
 
 @Component({
-    selector: 'vaul-drawer',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    host: {
-      '(window:pointerup)': 'onGlobalPointerUp($event)',
-      '(window:pointermove)': 'onGlobalPointerMove($event)',
-    },
-    template: `
+  selector: 'vaul-drawer',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(window:pointerup)': 'onGlobalPointerUp($event)',
+    '(window:pointermove)': 'onGlobalPointerMove($event)',
+  },
+  template: `
     <div
       class="vaul-drawer"
       #drawerRef
       role="dialog"
+      aria-label="Drawer panel"
       aria-modal="true"
       [attr.aria-hidden]="(isOpen$ | async) ? null : 'true'"
       [attr.data-vaul-drawer-direction]="direction()"
@@ -61,8 +62,8 @@ import { DrawerDirection, DrawerDirectionType, SnapPoint } from './types';
       </div>
     </div>
   `,
-    styles: [
-        `
+  styles: [
+    `
       :host {
         position: fixed;
         bottom: 0;
@@ -81,42 +82,43 @@ import { DrawerDirection, DrawerDirectionType, SnapPoint } from './types';
         height: auto;
         overflow: hidden;
         pointer-events: auto;
-        background: white;
+        background: var(--color-white);
         will-change: transform;
         cursor: grab;
       }
-
+      .drawer-content {
+        height: 100%;
+      }
       .vaul-drawer:active {
         cursor: grabbing;
       }
-
     `,
-    ],
-    imports: [AsyncPipe, HandleComponent]
+  ],
+  imports: [AsyncPipe, HandleComponent],
 })
 export class DrawerComponent implements OnDestroy {
   public fixed = input(true);
-  private drawerService = inject(DrawerService);
-  private scaleBackgroundService = inject(ScaleBackgroundService);
-  private preventScrollService = inject(PreventScrollService);
-  private destroyRef$ = inject(DestroyRef);
-  readonly open = input(false);
+  private readonly drawerService = inject(DrawerService);
+  private readonly scaleBackgroundService = inject(ScaleBackgroundService);
+  private readonly preventScrollService = inject(PreventScrollService);
+  private readonly destroyRef$ = inject(DestroyRef);
   readonly direction = input<DrawerDirectionType>(DrawerDirection.BOTTOM);
   readonly shouldScaleBackground = input(true);
-  readonly dismissible = input(true);
   readonly modal = input(true);
   readonly nested = input(false);
   readonly repositionInputs = input(true);
   readonly autoFocus = input(false);
+  readonly open = input(false);
+  readonly dismissible = input(true);
   readonly openChange = output<boolean>();
-  
+
   readonly snapPoints = input<SnapPoint[] | null>(null);
   readonly activeSnapPoint = input<SnapPoint | null>(null);
   readonly fadeFromIndex = input<number | undefined>(undefined);
   readonly snapToSequentialPoint = input(false);
   readonly activeSnapPointChange = output<SnapPoint | null>();
 
-  private cacheDirection: DrawerDirectionType | null =null;
+  private cacheDirection: DrawerDirectionType | null = null;
 
   drawerRef = viewChild<ElementRef<HTMLDivElement>>('drawerRef');
 
@@ -125,15 +127,14 @@ export class DrawerComponent implements OnDestroy {
   private readonly previousDiffFromInitial = signal(0);
   public isVertical = isVertical;
   public DrawerDirection = DrawerDirection;
- 
+
   isOpen$ = this.drawerService.isOpen$;
- 
+
   constructor() {
     this.drawerService.openTime$.next(new Date());
-    // Watch open state
+
     effect(() => {
-      const isOpen = this.open();
-      this.drawerService.setIsOpen(isOpen);
+      this.drawerService.setIsOpen(this.open());
     });
 
     effect(() => {
@@ -151,87 +152,85 @@ export class DrawerComponent implements OnDestroy {
     this.drawerService.activeSnapPoint$.pipe(takeUntilDestroyed()).subscribe((point) => {
       this.activeSnapPointChange.emit(point);
     });
-  afterNextRender(() => {
-    // Setup visual viewport handling
-    this.setupVisualViewport();
-    combineLatest({
-      isOpen: this.isOpen$,
-      shouldScale: this.drawerService.shouldScaleBackground$,
-      direction: this.drawerService.direction$.pipe(distinctUntilChanged()),
-      setBackgroundColor: this.drawerService.setBackgroundColorOnScale$,
-      noBodyStyles: this.drawerService.noBodyStyles$,
-    })
-      .pipe(takeUntilDestroyed(this.destroyRef$))
-      .subscribe((state) => {
-        const drawerRef = this.drawerRef();
-        if (drawerRef?.nativeElement && this.cacheDirection !== this.direction()) {
-          this.cacheDirection = this.direction();
-          this.drawerService.setDrawerRef(drawerRef.nativeElement || null); 
-          const offset = this.drawerService.getTranslateBasedOnDirection({ drawer: drawerRef.nativeElement, direction: this.direction()});
-          const transform = isVertical(this.direction()) ? `translateY(${offset}px)` : `translateX(${offset}px)`;
-          set(drawerRef.nativeElement, {
-            transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(',')})`,
-            transform,
-          });
-        }
-        this.openChange.emit(state.isOpen);
-        if (state.isOpen && state.shouldScale) {
-          if (this.scaleBackgroundService.timeoutId) {
-            clearTimeout(this.scaleBackgroundService.timeoutId);
+    afterNextRender(() => {
+      // Setup visual viewport handling
+      this.setupVisualViewport();
+      combineLatest({
+        isOpen: this.isOpen$,
+        shouldScale: this.drawerService.shouldScaleBackground$,
+        direction: this.drawerService.direction$.pipe(distinctUntilChanged()),
+        setBackgroundColor: this.drawerService.setBackgroundColorOnScale$,
+        noBodyStyles: this.drawerService.noBodyStyles$,
+      })
+        .pipe(takeUntilDestroyed(this.destroyRef$))
+        .subscribe((state) => {
+          const drawerRef = this.drawerRef();
+          if (drawerRef?.nativeElement && this.cacheDirection !== this.direction()) {
+            this.cacheDirection = this.direction();
+            this.drawerService.setDrawerRef(drawerRef.nativeElement || null);
+            const offset = this.drawerService.getTranslateBasedOnDirection({
+              drawer: drawerRef.nativeElement,
+              direction: this.direction(),
+            });
+            const transform = isVertical(this.direction()) ? `translateY(${offset}px)` : `translateX(${offset}px)`;
+            set(drawerRef.nativeElement, {
+              transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(',')})`,
+              transform,
+            });
           }
-          const wrapper =
-            (document.querySelector('[data-vaul-drawer-wrapper]') as HTMLElement) ||
-            (document.querySelector('[vaul-drawer-wrapper]') as HTMLElement);
+          this.openChange.emit(state.isOpen);
+          if (state.isOpen && state.shouldScale) {
+            if (this.scaleBackgroundService.timeoutId) {
+              clearTimeout(this.scaleBackgroundService.timeoutId);
+            }
+            const wrapper =
+              (document.querySelector('[data-vaul-drawer-wrapper]') as HTMLElement) ||
+              (document.querySelector('[vaul-drawer-wrapper]') as HTMLElement);
 
-          if (!wrapper) return;
-          chain(
-            state.setBackgroundColor && !state.noBodyStyles
-              ? assignStyle(document.body, { background: 'black' })
-              : noop,
-            assignStyle(wrapper, {
-              transformOrigin: isVertical(this.direction()) ? 'top' : 'left',
-              transitionProperty: 'transform, border-radius',
-              transitionDuration: `${TRANSITIONS.DURATION}s`,
-              transitionTimingFunction: `cubic-bezier(${TRANSITIONS.EASE.join(',')})`,
-            }),
-          );
+            if (!wrapper) return;
+            chain(
+              state.setBackgroundColor && !state.noBodyStyles
+                ? assignStyle(document.body, { background: 'black' })
+                : noop,
+              assignStyle(wrapper, {
+                transformOrigin: isVertical(this.direction()) ? 'top' : 'left',
+                transitionProperty: 'transform, border-radius',
+                transitionDuration: `${TRANSITIONS.DURATION}s`,
+                transitionTimingFunction: `cubic-bezier(${TRANSITIONS.EASE.join(',')})`,
+              }),
+            );
 
-          const wrapperStylesCleanup = assignStyle(wrapper, {
-            borderRadius: `${BORDER_RADIUS}px`,
-            overflow: 'hidden',
-            transform: `scale(${this.scaleBackgroundService.getScale()}) translate3d(0, calc(env(safe-area-inset-top) + 14px), 0)`,
-          });
+            const wrapperStylesCleanup = assignStyle(wrapper, {
+              borderRadius: `${BORDER_RADIUS}px`,
+              overflow: 'hidden',
+              transform: `scale(${this.drawerService.getScale()}) translate3d(0, calc(env(safe-area-inset-top) + 14px), 0)`,
+            });
 
-          // Cleanup function
-          return () => {
-            wrapperStylesCleanup();
-            this.scaleBackgroundService.timeoutId = window.setTimeout(() => {
-              const initialBg = this.scaleBackgroundService.initialBackgroundColor.value;
-              if (initialBg) {
-                document.body.style.background = initialBg;
-              } else {
-                document.body.style.removeProperty('background');
-              }
-            }, TRANSITIONS.DURATION * 1000);
-          };
+            // Cleanup function
+            return () => {
+              wrapperStylesCleanup();
+              this.scaleBackgroundService.timeoutId = window.setTimeout(() => {
+                const initialBg = this.scaleBackgroundService.initialBackgroundColor.value;
+                if (initialBg) {
+                  document.body.style.background = initialBg;
+                } else {
+                  document.body.style.removeProperty('background');
+                }
+              }, TRANSITIONS.DURATION * 1000);
+            };
+          }
+          return null;
+        });
+      let preventScrollCount = 0;
+      preventScrollCount++;
+      if (preventScrollCount === 1) {
+        if (isIOS()) {
+          this.preventScrollService.preventScrollMobileSafari();
         }
-        return null;
-      });
-    // const drawerRef = this.drawerRef();
-    
-    let preventScrollCount = 0;
-    preventScrollCount++;
-    if (preventScrollCount === 1) {
-      if (isIOS()) {
-        this.preventScrollService.preventScrollMobileSafari();
       }
-    }
-    if (!this.drawerRef()) return;
-    // if (this.direction()) {
-    //   this.drawerService.setDirection(this.direction());
-    // }
-  });
-}
+      if (!this.drawerRef()) return;
+    });
+  }
 
   private onVisualViewportChange() {
     const drawer = this.drawerRef()?.nativeElement;
@@ -259,9 +258,7 @@ export class DrawerComponent implements OnDestroy {
       // We don't have to change the height if the input is in view, when we are here we are in the opened keyboard state so we can correctly check if the input is in view
       if (drawerHeight > visualViewportHeight || this.keyboardIsOpen()) {
         const height = drawer.getBoundingClientRect().height;
-        const width = drawer.getBoundingClientRect().width;
         let newDrawerHeight = height;
-        let newDrawerWidth = width;
         if (isVertical(this.direction())) {
           if (height > visualViewportHeight) {
             newDrawerHeight = visualViewportHeight - (isTallEnough ? offsetFromTop : WINDOW_TOP_OFFSET);
@@ -273,9 +270,6 @@ export class DrawerComponent implements OnDestroy {
             drawer.style.height = `${Math.max(newDrawerHeight, visualViewportHeight - offsetFromTop)}px`;
           }
         } else {
-          if (width > visualViewportHeight) {
-            newDrawerWidth = visualViewportHeight - (isTallEnough ? offsetFromTop : WINDOW_TOP_OFFSET);
-          }
           // When fixed, don't move the drawer upwards if there's space, but rather only change it's height so it's fully scrollable when the keyboard is open
           if (this.fixed()) {
             drawer.style.height = `${height - Math.max(diffFromInitial, 0)}px`;
@@ -303,8 +297,8 @@ export class DrawerComponent implements OnDestroy {
     window.visualViewport.addEventListener('resize', this.onVisualViewportChange.bind(this));
   }
 
-
   ngOnDestroy() {
+    window.visualViewport?.removeEventListener('resize', this.onVisualViewportChange.bind(this));
     this.drawerService.setDrawerRef(null);
   }
 
@@ -390,7 +384,7 @@ export class DrawerComponent implements OnDestroy {
   }
 
   onDrag(event: DragEvent | PointerEvent, element: HTMLDivElement) {
-    this.drawerService.onDrag(event, element);
+    this.drawerService.onDrag(event, element, this.dismissible());
   }
 
   cancelDrag(element?: HTMLDivElement) {

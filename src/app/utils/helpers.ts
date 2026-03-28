@@ -1,5 +1,6 @@
 import { AnyFunction } from '../types';
 import { DrawerDirectionType } from './../types';
+import { SnapPoint } from "../types";
 
 interface Style {
   [key: string]: string;
@@ -57,17 +58,16 @@ export function getTranslate(element: HTMLElement, direction: DrawerDirectionTyp
   if (!element) {
     return null;
   }
-  const style = window.getComputedStyle(element);
+  const style: CSSStyleDeclaration & { webkitTransform?: string; mozTransform?: string } = window.getComputedStyle(element);
   const transform =
-    // @ts-ignore
     style.transform || style.webkitTransform || style.mozTransform;
-  let mat = transform.match(/^matrix3d\((.+)\)$/);
+  let mat = transform?.match(/^matrix3d\((.+)\)$/);
   if (mat) {
     // https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix3d
     return parseFloat(mat[1].split(', ')[isVertical(direction) ? 13 : 12]);
   }
   // https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix
-  mat = transform.match(/^matrix\((.+)\)$/);
+  mat = transform?.match(/^matrix\((.+)\)$/);
   return mat ? parseFloat(mat[1].split(', ')[isVertical(direction) ? 5 : 4]) : null;
 }
 
@@ -93,7 +93,6 @@ export function chain<T>(...fns: T[]) {
   return (...args: T extends AnyFunction ? Parameters<T> : never) => {
     for (const fn of fns) {
       if (typeof fn === 'function') {
-        // @ts-ignore
         fn(...args);
       }
     }
@@ -110,4 +109,24 @@ export function isInput(target: Element) {
 
 export function isVertical(direction: DrawerDirectionType) {
   return direction === 'top' || direction === 'bottom' ? true : false;
+}
+
+export function validateSnapPointGuard(value: unknown): value is SnapPoint {
+
+      if (typeof value === 'number') {
+        return !Number.isNaN(value);
+      }
+    
+      if (typeof value === 'string') {
+        // Regex breakdown:
+        // ^[+-]?        -> Optional positive or negative sign
+        // (\d+(\.\d*)?  -> Digits with optional decimals (e.g., "10", "10.5", "10.")
+        // |\.\d+)       -> OR a decimal starting with a dot (e.g., ".5")
+        // px$           -> Ends exactly with "px"
+        const pxPattern = /^[+-]?(\d+(\.\d*)?|\.\d+)px$/;
+        
+        return pxPattern.test(value);
+      }
+    
+      return false;
 }

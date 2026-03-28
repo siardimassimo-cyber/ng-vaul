@@ -1,0 +1,465 @@
+[
+  {
+    "id": "TC001",
+    "title": "Open and close the drawer via trigger and inner close control",
+    "description": "Opens the drawer via #drawer-open-close-trigger (.trigger-button), waits for data-state=open on vaul-drawer .vaul-drawer, then closes it by JS-clicking #drawer-inner-close (use page.evaluate to bypass viewport check), and asserts data-state=closed.",
+    "category": "Open/Close Drawer",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:4200"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-state=closed"
+      },
+      {
+        "type": "action",
+        "description": "Click #drawer-open-close-trigger to open the drawer"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-state=open"
+      },
+      {
+        "type": "action",
+        "description": "Wait 600ms for animation, then JS-click #drawer-inner-close using page.evaluate(\"document.getElementById(\"drawer-inner-close\").click()\")"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-state=closed"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Close the drawer using the Escape key",
+    "description": "Verifies the Escape key closes an open dismissible drawer. Dismissible is ON by default. Use page.keyboard.press(\"Escape\") to send the key. Verify closure via data-state attribute equals \"closed\" on the vaul-drawer .vaul-drawer element.",
+    "category": "Open/Close Drawer",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:4200"
+      },
+      {
+        "type": "action",
+        "description": "Click the .trigger-button to open the drawer"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify drawer element vaul-drawer .vaul-drawer has attribute data-state equal to open"
+      },
+      {
+        "type": "action",
+        "description": "Press the Escape key using page.keyboard.press(\"Escape\")"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify drawer element vaul-drawer .vaul-drawer has attribute data-state equal to closed"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Attempt to close the drawer while it is already closed",
+    "description": "Verifies that attempting to close an already-closed drawer is a no-op. Press Escape when the drawer is closed and verify it stays closed.",
+    "category": "Open/Close Drawer",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:4200"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-state=closed"
+      },
+      {
+        "type": "action",
+        "description": "Press Escape using page.keyboard.press(\"Escape\")"
+      },
+      {
+        "type": "action",
+        "description": "Wait 500ms"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer still has data-state=closed"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Open/close drawer moves focus to inner close and returns to trigger",
+    "description": "Verifies focus enters the drawer on open (to the primary close control) and returns to the original trigger on close.",
+    "category": "Focus Management",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the open/close trigger button to toggle the drawer"
+      },
+      {
+        "type": "action",
+        "description": "Click the inner Close button to close the drawer"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the drawer is closed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify focus returns to the open/close trigger button"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Advance to next snap point and return to previous snap point",
+    "description": "Verifies snap navigation updates the drawer position across snap points in both directions.",
+    "category": "Snap Points Navigation",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Open the drawer"
+      },
+      {
+        "type": "action",
+        "description": "Click Next snap button to advance to the next snap point"
+      },
+      {
+        "type": "action",
+        "description": "Click Previous snap button to go to the previous snap point"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the drawer is open"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the drawer settles at the previous snap point position"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Prevent advancing past the last configured snap point",
+    "description": "Opens the drawer (snap points: 0.4, 0.8, 1), then JS-clicks #drawer-next-snap three times to advance past the last snap point, and asserts the drawer is still open (data-state=open).",
+    "category": "Snap Points Navigation",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:4200"
+      },
+      {
+        "type": "action",
+        "description": "Click #drawer-open-close-trigger to open the drawer"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-state=open"
+      },
+      {
+        "type": "action",
+        "description": "Wait 600ms for animation, then JS-click #drawer-next-snap three times using page.evaluate(\"document.getElementById(\"drawer-next-snap\").click()\") with 400ms between each"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer still has data-state=open"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Drawer opens and closes from the selected direction",
+    "description": "Selects Left direction via #direction-left-btn, opens the drawer, asserts data-vaul-drawer-direction=left and data-state=open on vaul-drawer .vaul-drawer, then JS-clicks #drawer-inner-close and asserts data-state=closed.",
+    "category": "Direction Control",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:4200"
+      },
+      {
+        "type": "action",
+        "description": "Click #direction-left-btn to change direction to left"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-vaul-drawer-direction=left"
+      },
+      {
+        "type": "action",
+        "description": "Click #drawer-open-close-trigger to open the drawer"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-state=open"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-vaul-drawer-direction=left"
+      },
+      {
+        "type": "action",
+        "description": "JS-click #drawer-inner-close using page.evaluate(\"document.getElementById(\"drawer-inner-close\").click()\")"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-state=closed"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Changing direction updates the next open behavior",
+    "description": "Asserts default direction is bottom on vaul-drawer .vaul-drawer, clicks #direction-top-btn, asserts data-vaul-drawer-direction=top, opens the drawer, asserts open and top direction, then JS-clicks #drawer-inner-close.",
+    "category": "Direction Control",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:4200"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-vaul-drawer-direction=bottom"
+      },
+      {
+        "type": "action",
+        "description": "Click #direction-top-btn to change direction to top"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-vaul-drawer-direction=top"
+      },
+      {
+        "type": "action",
+        "description": "Click #drawer-open-close-trigger to open the drawer"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-state=open and data-vaul-drawer-direction=top"
+      },
+      {
+        "type": "action",
+        "description": "JS-click #drawer-inner-close using page.evaluate(\"document.getElementById(\"drawer-inner-close\").click()\")"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-state=closed"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Default direction is bottom when no direction is passed",
+    "description": "Verifies that when no direction is configured, the drawer opens from the bottom by default.",
+    "category": "Direction Control",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the drawer element has data-vaul-drawer-direction attribute set to 'bottom'"
+      },
+      {
+        "type": "action",
+        "description": "Click the open drawer trigger"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the drawer opens from the bottom direction"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Escape does not dismiss drawer when dismissible is off",
+    "description": "Verifies that pressing Escape does not close the drawer when dismissible is disabled.",
+    "category": "Dismissible Control",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Toggle dismissible off in the control center"
+      },
+      {
+        "type": "action",
+        "description": "Click the open drawer trigger"
+      },
+      {
+        "type": "action",
+        "description": "Press Escape"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the drawer remains open"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Escape dismisses drawer when dismissible is on",
+    "description": "Verifies that pressing Escape closes the drawer when dismissible is enabled. Dismissible defaults to ON so no toggle is needed. Use page.keyboard.press(\"Escape\") after opening the drawer. Check data-state attribute on vaul-drawer .vaul-drawer equals \"closed\".",
+    "category": "Dismissible Control",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:4200"
+      },
+      {
+        "type": "action",
+        "description": "Click the .trigger-button to open the drawer"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify drawer element vaul-drawer .vaul-drawer has attribute data-state equal to open"
+      },
+      {
+        "type": "action",
+        "description": "Press the Escape key using page.keyboard.press(\"Escape\")"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify drawer element vaul-drawer .vaul-drawer has attribute data-state equal to closed"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Overlay click does not dismiss drawer when dismissible is off",
+    "description": "Verifies clicking the overlay does not close the drawer when dismissible is disabled.",
+    "category": "Dismissible Control",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Toggle dismissible off in the control center"
+      },
+      {
+        "type": "action",
+        "description": "Click the open drawer trigger"
+      },
+      {
+        "type": "action",
+        "description": "Click the overlay"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the drawer remains open"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Drawer uses configured snap points on open and can change between them",
+    "description": "Verifies the drawer snaps to the initial configured snap point and can move between configured snap points.",
+    "category": "Snap Points Configuration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Update snap points in the control center to an ascending array of values"
+      },
+      {
+        "type": "action",
+        "description": "Click the open drawer trigger"
+      },
+      {
+        "type": "action",
+        "description": "Advance to the next snap point"
+      },
+      {
+        "type": "action",
+        "description": "Return to the previous snap point"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the drawer positions correspond to the configured snap points"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Empty snap points array skips snap behavior",
+    "description": "Verifies an empty snap points configuration results in default fully open behavior.",
+    "category": "Snap Points Configuration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Update snap points in the control center with an empty array"
+      },
+      {
+        "type": "action",
+        "description": "Click the open drawer trigger"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the drawer opens to the default fully open position"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Unsorted snap points array skips snap behavior",
+    "description": "Removes all existing snap points using button[aria-label=\"Remove snap point VALUE\"], adds unsorted snap points [1, 0.4, 0.8] via #snap-point-input and #snap-point-add-btn, then opens the drawer and asserts data-state=open.",
+    "category": "Snap Points Configuration",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:4200"
+      },
+      {
+        "type": "action",
+        "description": "Click button[aria-label=\"Remove snap point 0.4\"], button[aria-label=\"Remove snap point 0.8\"], button[aria-label=\"Remove snap point 1\"] to clear all snap points"
+      },
+      {
+        "type": "action",
+        "description": "Fill #snap-point-input with \"1\" and click #snap-point-add-btn. Repeat for \"0.4\" and \"0.8\" to add unsorted snap points"
+      },
+      {
+        "type": "action",
+        "description": "Click #drawer-open-close-trigger to open the drawer"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vaul-drawer .vaul-drawer has data-state=open"
+      }
+    ]
+  }
+]

@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Subject, combineLatest, takeUntil } from 'rxjs';
-import { BORDER_RADIUS, TRANSITIONS, WINDOW_TOP_OFFSET } from './constants';
+import { BORDER_RADIUS, TRANSITIONS } from './constants';
 import { DrawerService } from './drawer.service';
-import { assignStyle, chain } from './helpers';
+import { assignStyle, chain } from '../utils/helpers';
 
 const noop = () => () => {};
 
@@ -15,10 +15,6 @@ export class ScaleBackgroundService {
   public initialBackgroundColor = new BehaviorSubject<string>(
     typeof document !== 'undefined' ? document.body.style.backgroundColor : '',
   );
-
-  getScale(): number {
-    return (window.innerWidth - WINDOW_TOP_OFFSET) / window.innerWidth;
-  }
 
   ngOnDestroy() {
     if (this.timeoutId) {

@@ -1,26 +1,13 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 import { isIOS } from './browser';
 import { DrawerService } from './drawer.service';
-import { isVertical } from './helpers';
+import { chain, isInput, isVertical } from '../utils/helpers';
 
 const KEYBOARD_BUFFER = 24;
 
-// HTML input types that do not cause the software keyboard to appear
-const nonTextInputTypes = new Set([
-  'checkbox',
-  'radio',
-  'range',
-  'color',
-  'file',
-  'image',
-  'button',
-  'submit',
-  'reset',
-]);
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class PreventScrollService {
   private readonly drawerService = inject(DrawerService);
@@ -28,69 +15,67 @@ export class PreventScrollService {
   private preventScrollCount = 0;
   private restore: (() => void) | undefined;
   private readonly visualViewport = typeof window !== 'undefined' ? window.visualViewport : null;
-  
+
   constructor() {
     // Watch for drawer open state changes
-    this.drawerService.isOpen$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(isOpen => {
-        const isDisabled = !isOpen;
-        
-        if (isDisabled) {
-          return;
-        }
+    this.drawerService.isOpen$.pipe(takeUntil(this.destroy$)).subscribe((isOpen) => {
+      const isDisabled = !isOpen;
 
-        const documentElement = document.documentElement;
-        const documentBody = document.body;
+      if (isDisabled) {
+        return;
+      }
 
-        if (this.preventScrollCount++ > 0) {
-          return;
-        }
+      const documentElement = document.documentElement;
+      const documentBody = document.body;
 
-        const scrollbarWidth = window.innerWidth - documentElement.clientWidth;
+      if (this.preventScrollCount++ > 0) {
+        return;
+      }
 
-        // Handle iOS specific scroll prevention
-        if (isIOS()) {
-          const scrollY = window.scrollY;
-          const fill = scrollbarWidth > 0;
-          const elementToPrevent = documentBody;
+      const scrollbarWidth = window.innerWidth - documentElement.clientWidth;
 
-          elementToPrevent.style.position = 'fixed';
-          elementToPrevent.style.overflow = 'hidden';
-          elementToPrevent.style.width = '100%';
-          elementToPrevent.style.top = `-${scrollY}px`;
-          elementToPrevent.style.paddingRight = fill ? `${scrollbarWidth}px` : '';
+      // Handle iOS specific scroll prevention
+      if (isIOS()) {
+        const scrollY = window.scrollY;
+        const fill = scrollbarWidth > 0;
+        const elementToPrevent = documentBody;
 
-          this.restore = () => {
-            elementToPrevent.style.position = '';
-            elementToPrevent.style.overflow = '';
-            elementToPrevent.style.width = '';
-            elementToPrevent.style.top = '';
-            elementToPrevent.style.paddingRight = '';
-            window.scrollTo(0, scrollY);
-          };
-
-          return;
-        }
-
-        // Handle other browsers
-        const target = documentElement;
-        const { scrollbarGutter } = getComputedStyle(target);
-        const hasScrollbarGutter = scrollbarGutter === 'stable';
-        const fill = scrollbarWidth > 0 && !hasScrollbarGutter;
-
-        target.style.overflow = 'hidden';
-        if (fill) {
-          target.style.paddingRight = `${scrollbarWidth}px`;
-        }
+        elementToPrevent.style.position = 'fixed';
+        elementToPrevent.style.overflow = 'hidden';
+        elementToPrevent.style.width = '100%';
+        elementToPrevent.style.top = `-${scrollY}px`;
+        elementToPrevent.style.paddingRight = fill ? `${scrollbarWidth}px` : '';
 
         this.restore = () => {
-          target.style.overflow = '';
-          if (fill) {
-            target.style.paddingRight = '';
-          }
+          elementToPrevent.style.position = '';
+          elementToPrevent.style.overflow = '';
+          elementToPrevent.style.width = '';
+          elementToPrevent.style.top = '';
+          elementToPrevent.style.paddingRight = '';
+          window.scrollTo(0, scrollY);
         };
-      });
+
+        return;
+      }
+
+      // Handle other browsers
+      const target = documentElement;
+      const { scrollbarGutter } = getComputedStyle(target);
+      const hasScrollbarGutter = scrollbarGutter === 'stable';
+      const fill = scrollbarWidth > 0 && !hasScrollbarGutter;
+
+      target.style.overflow = 'hidden';
+      if (fill) {
+        target.style.paddingRight = `${scrollbarWidth}px`;
+      }
+
+      this.restore = () => {
+        target.style.overflow = '';
+        if (fill) {
+          target.style.paddingRight = '';
+        }
+      };
+    });
   }
 
   ngOnDestroy() {
@@ -119,25 +104,15 @@ export class PreventScrollService {
     return node || document.scrollingElement || document.documentElement;
   }
 
-  private isInput(target: Element): boolean {
-    return (
-      (target instanceof HTMLInputElement && !nonTextInputTypes.has(target.type)) ||
-      target instanceof HTMLTextAreaElement ||
-      (target instanceof HTMLElement && target.isContentEditable)
-    );
-  }
-
   preventScrollMobileSafari() {
     let scrollable: Element;
     let lastY = 0;
-    let lastX = 0;
     const onTouchStart = (e: TouchEvent) => {
       scrollable = this.getScrollParent(e.target as Element);
       if (scrollable === document.documentElement && scrollable === document.body) {
         return;
       }
       lastY = e.changedTouches[0].pageY;
-      lastX = e.changedTouches[0].pageX;
     };
 
     const onTouchMove = (e: TouchEvent) => {
@@ -162,7 +137,7 @@ export class PreventScrollService {
     const onTouchEnd = (e: TouchEvent) => {
       const target = e.target as HTMLElement;
       const direction = this.drawerService.direction$.getValue();
-      if (this.isInput(target) && target !== document.activeElement) {
+      if (isInput(target) && target !== document.activeElement) {
         e.preventDefault();
         target.style.transform = isVertical(direction) ? 'translateY(-2000px)' : 'translateX(-2000px)';
         target.focus();
@@ -174,7 +149,7 @@ export class PreventScrollService {
 
     const onFocus = (e: FocusEvent) => {
       const target = e.target as HTMLElement;
-      if (this.isInput(target)) {
+      if (isInput(target)) {
         target.style.transform = 'translateY(-2000px)';
         requestAnimationFrame(() => {
           target.style.transform = '';
@@ -200,19 +175,23 @@ export class PreventScrollService {
     const scrollX = window.pageXOffset;
     const scrollY = window.pageYOffset;
 
-    const restoreStyles = this.chain(
-      this.setStyle(document.documentElement, 'paddingRight', `${window.innerWidth - document.documentElement.clientWidth}px`)
+    const restoreStyles = chain(
+      this.setStyle(
+        document.documentElement,
+        'paddingRight',
+        `${window.innerWidth - document.documentElement.clientWidth}px`,
+      ),
     );
 
     // Scroll to top
     window.scrollTo(0, 0);
 
-    const removeEvents = this.chain(
+    const removeEvents = chain(
       this.addEvent(document, 'touchstart', onTouchStart, { passive: false, capture: true }),
       this.addEvent(document, 'touchmove', onTouchMove, { passive: false, capture: true }),
       this.addEvent(document, 'touchend', onTouchEnd, { passive: false, capture: true }),
       this.addEvent(document, 'focus', onFocus, true),
-      this.addEvent(window, 'scroll', onWindowScroll)
+      this.addEvent(window, 'scroll', onWindowScroll),
     );
 
     return () => {
@@ -252,7 +231,7 @@ export class PreventScrollService {
     target: EventTarget,
     event: K,
     handler: (this: Document, ev: GlobalEventHandlersEventMap[K]) => any,
-    options?: boolean | AddEventListenerOptions
+    options?: boolean | AddEventListenerOptions,
   ) {
     target.addEventListener(event, handler as EventListener, options);
     return () => {
@@ -260,13 +239,4 @@ export class PreventScrollService {
     };
   }
 
-  private chain(...callbacks: Array<() => void>): () => void {
-    return () => {
-      callbacks.forEach(callback => {
-        if (typeof callback === 'function') {
-          callback();
-        }
-      });
-    };
-  }
-} 
+}

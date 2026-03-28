@@ -8,10 +8,10 @@ test.describe('Drawer E2E', () => {
   test('should open and close the drawer via the trigger button', async ({ page }) => {
     const trigger = page.locator('.trigger-button');
     const drawerDiv = page.locator('vaul-drawer .vaul-drawer');
-    
+
     // Initial state: closed
     await expect(drawerDiv).toHaveAttribute('data-state', 'closed');
-    
+
     // Open drawer
     await trigger.click();
     await expect(drawerDiv).toHaveAttribute('data-state', 'open');
@@ -38,7 +38,7 @@ test.describe('Drawer E2E', () => {
 
   test('should change drawer direction', async ({ page }) => {
     const drawerDiv = page.locator('vaul-drawer .vaul-drawer');
-    
+
     // Check initial direction (Bottom)
     await expect(drawerDiv).toHaveAttribute('data-vaul-drawer-direction', 'bottom');
 
@@ -59,7 +59,7 @@ test.describe('Drawer E2E', () => {
   test('should snap to points when dragging', async ({ page }) => {
     const trigger = page.locator('.trigger-button');
     const drawerDiv = page.locator('vaul-drawer .vaul-drawer');
-    
+
     await trigger.click();
     await expect(drawerDiv).toHaveAttribute('data-state', 'open');
 

@@ -3,21 +3,21 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { DrawerComponent } from './drawer.component';
 import { DrawerService } from './services/drawer.service';
 import { DrawerDirection } from './types';
+import { createDrawerServiceMock } from './services/__mocks__/drawer.service.mock';
 
 describe('DrawerComponent', () => {
   let component: DrawerComponent;
   let fixture: ComponentFixture<DrawerComponent>;
-  let drawerService: DrawerService;
+  let mockDrawerService = createDrawerServiceMock();
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [DrawerComponent],
-      providers: [DrawerService]
+      providers: [DrawerService, { provide: DrawerService, useValue: mockDrawerService }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(DrawerComponent);
     component = fixture.componentInstance;
-    drawerService = TestBed.inject(DrawerService);
     fixture.detectChanges();
   });
 

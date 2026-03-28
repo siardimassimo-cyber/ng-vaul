@@ -1,0 +1,91 @@
+version: "2"
+type: frontend
+tech_stack:
+  - TypeScript
+  - Angular
+  - RxJS
+  - Signals
+routes:
+  - path: /
+    file: src/app/app.component.ts
+    auth_required: false
+    description: Main page with drawer demo
+features:
+  - name: Open/Close Drawer
+    description: Toggle the drawer open or closed via a button in the control center, Escape key, or the inner Close button
+    files:
+      - src/app/app.component.ts
+      - src/app/control-center.component.ts
+      - src/app/drawer.component.ts
+    entry_route: /
+    user_interactions:
+      - Click the open/close trigger button to toggle the drawer
+      - Click the inner Close button to close the drawer
+      - Press Escape to close the drawer when dismissible is true
+    api_calls: []
+    auth_required: false
+
+  - name: Focus Management
+    description: When the drawer opens focus moves to the inner Close button; when it closes focus returns to the open/close trigger
+    files:
+      - src/app/app.component.ts
+    entry_route: /
+    user_interactions:
+      - Open the drawer and verify focus is on the inner Close button
+      - Close the drawer and verify focus returns to the trigger button
+    api_calls: []
+    auth_required: false
+
+  - name: Snap Points Navigation
+    description: Navigate between drawer snap points using Previous snap and Next snap buttons inside the drawer
+    files:
+      - src/app/app.component.ts
+      - src/app/services/drawer-snap.service.ts
+    entry_route: /
+    user_interactions:
+      - Open the drawer
+      - Click Next snap button to advance to the next snap point
+      - Click Previous snap button to go to the previous snap point
+    api_calls: []
+    auth_required: false
+
+  - name: Direction Control
+    description: Change the drawer direction (bottom, top, left, right) from the control center
+    files:
+      - src/app/app.component.ts
+      - src/app/control-center.component.ts
+    entry_route: /
+    user_interactions:
+      - Select a direction from the control center
+      - Observe the drawer slides in from the selected direction
+    api_calls: []
+    auth_required: false
+
+  - name: Dismissible Control
+    description: Toggle whether pressing Escape or clicking the overlay closes the drawer
+    files:
+      - src/app/app.component.ts
+      - src/app/control-center.component.ts
+      - src/app/overlay.component.ts
+    entry_route: /
+    user_interactions:
+      - Toggle dismissible off in the control center
+      - Press Escape and verify drawer stays open
+      - Toggle dismissible on
+      - Press Escape and verify drawer closes
+    api_calls: []
+    auth_required: false
+
+  - name: Snap Points Configuration
+    description: Configure custom snap points via the control center
+    files:
+      - src/app/app.component.ts
+      - src/app/control-center.component.ts
+    entry_route: /
+    user_interactions:
+      - Update snap points in the control center
+      - Open the drawer and verify it snaps to the configured points
+    api_calls: []
+    auth_required: false
+
+known_limitations: []
