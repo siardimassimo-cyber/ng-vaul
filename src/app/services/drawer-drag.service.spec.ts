@@ -40,20 +40,20 @@ describe('DrawerDragService', () => {
   beforeEach(() => {
     mockDrawer = createMockHTMLElement();
     domSetup = setupDrawerDOM();
-    stateMock.isOpen$.next(false);
-    stateMock.isDragging$.next(false);
-    stateMock.drawerRef$.next(null);
-    stateMock.overlayRef$.next(null);
-    stateMock.direction$.next(DrawerDirection.BOTTOM);
-    stateMock.openTime$.next(null);
-    snapMock.snapPoints$.next(null);
-    snapMock.activeSnapPoint$.next(null);
-    service.dragStartPosition$.next(null);
-    service.pointerStart$.next(null);
-    service.dragEndTime$.next(null);
-    service.dragStartTime$.next(null);
-    service.isAllowedToDrag$.next(false);
-    (service as any).currentPointerPosition$.next(null);
+    stateMock.isOpen.set(false);
+    stateMock.isDragging.set(false);
+    stateMock.drawerRef.set(null);
+    stateMock.overlayRef.set(null);
+    stateMock.direction.set(DrawerDirection.BOTTOM);
+    stateMock.openTime.set(null);
+    snapMock.snapPoints.set(null);
+    snapMock.activeSnapPoint.set(null);
+    service.dragStartPosition.set(null);
+    service.pointerStart.set(null);
+    service.dragEndTime.set(null);
+    service.dragStartTime.set(null);
+    service.isAllowedToDrag.set(false);
+    service.currentPointerPosition.set(null);
     vi.clearAllMocks();
   });
 
@@ -67,15 +67,15 @@ describe('DrawerDragService', () => {
     });
 
     it('should start with null drag start position', () => {
-      expect(service.dragStartPosition$.value).toBeNull();
+      expect(service.dragStartPosition()).toBeNull();
     });
 
     it('should start with null pointer start', () => {
-      expect(service.pointerStart$.value).toBeNull();
+      expect(service.pointerStart()).toBeNull();
     });
 
     it('should start not allowed to drag', () => {
-      expect(service.isAllowedToDrag$.value).toBe(false);
+      expect(service.isAllowedToDrag()).toBe(false);
     });
   });
 
@@ -85,30 +85,30 @@ describe('DrawerDragService', () => {
     });
 
     it('should return 0 when current position is null', () => {
-      service.dragStartPosition$.next({ x: 100, y: 200 });
+      service.dragStartPosition.set({ x: 100, y: 200 });
       expect(service.calculateDragDelta()).toBe(0);
     });
 
     it('should calculate vertical delta for BOTTOM direction', () => {
-      stateMock.direction$.next(DrawerDirection.BOTTOM);
-      service.dragStartPosition$.next({ x: 100, y: 200 });
-      (service as any).currentPointerPosition$.next({ x: 100, y: 350 });
+      stateMock.direction.set(DrawerDirection.BOTTOM);
+      service.dragStartPosition.set({ x: 100, y: 200 });
+      service.currentPointerPosition.set({ x: 100, y: 350 });
 
       expect(service.calculateDragDelta()).toBe(150);
     });
 
     it('should calculate horizontal delta for RIGHT direction', () => {
-      stateMock.direction$.next(DrawerDirection.RIGHT);
-      service.dragStartPosition$.next({ x: 100, y: 200 });
-      (service as any).currentPointerPosition$.next({ x: 250, y: 200 });
+      stateMock.direction.set(DrawerDirection.RIGHT);
+      service.dragStartPosition.set({ x: 100, y: 200 });
+      service.currentPointerPosition.set({ x: 250, y: 200 });
 
       expect(service.calculateDragDelta()).toBe(150);
     });
 
     it('should return negative delta when dragging in closing direction', () => {
-      stateMock.direction$.next(DrawerDirection.BOTTOM);
-      service.dragStartPosition$.next({ x: 100, y: 300 });
-      (service as any).currentPointerPosition$.next({ x: 100, y: 100 });
+      stateMock.direction.set(DrawerDirection.BOTTOM);
+      service.dragStartPosition.set({ x: 100, y: 300 });
+      service.currentPointerPosition.set({ x: 100, y: 100 });
 
       expect(service.calculateDragDelta()).toBe(-200);
     });
@@ -117,12 +117,12 @@ describe('DrawerDragService', () => {
   describe('onPress', () => {
     it('should do nothing when element is not provided', () => {
       service.onPress(dispatchPointerEventOn(mockDrawer, { clientX: 100, clientY: 200 }));
-      expect(service.dragStartPosition$.value).toBeNull();
+      expect(service.dragStartPosition()).toBeNull();
     });
 
     it('should set the drag start position', () => {
       service.onPress(dispatchPointerEventOn(mockDrawer, { clientX: 100, clientY: 200 }), mockDrawer);
-      expect(service.dragStartPosition$.value).toEqual({ x: 100, y: 200 });
+      expect(service.dragStartPosition()).toEqual({ x: 100, y: 200 });
     });
 
     it('should capture the pointer on the element', () => {
@@ -132,26 +132,26 @@ describe('DrawerDragService', () => {
 
     it('should set the current pointer position', () => {
       service.onPress(dispatchPointerEventOn(mockDrawer, { clientX: 150, clientY: 250 }), mockDrawer);
-      expect((service as any).currentPointerPosition$.value).toEqual({ x: 150, y: 250 });
+      expect(service.currentPointerPosition()).toEqual({ x: 150, y: 250 });
     });
   });
 
   describe('onDrag', () => {
     it('should do nothing when element is not provided', () => {
       service.onDrag(new PointerEvent('pointermove', { clientX: 200, clientY: 300 }));
-      expect((service as any).currentPointerPosition$.value).toBeNull();
+      expect(service.currentPointerPosition()).toBeNull();
     });
 
     it('should update the current pointer position', () => {
-      stateMock.isDragging$.next(true);
-      service.isAllowedToDrag$.next(true);
+      stateMock.isDragging.set(true);
+      service.isAllowedToDrag.set(true);
       const event = dispatchPointerEventOn(mockDrawer, { clientX: 200, clientY: 300, buttons: 1 });
       service.onDrag(event, mockDrawer);
-      expect((service as any).currentPointerPosition$.value).toEqual({ x: 200, y: 300 });
+      expect(service.currentPointerPosition()).toEqual({ x: 200, y: 300 });
     });
 
     it('should stop drag and call onRelease when buttons are 0', () => {
-      stateMock.isDragging$.next(true);
+      stateMock.isDragging.set(true);
       const event = new PointerEvent('pointermove', { buttons: 0 });
 
       service.onDrag(event, mockDrawer);
@@ -160,11 +160,11 @@ describe('DrawerDragService', () => {
     });
 
     it('should apply the drag transform when dragging is active', () => {
-      stateMock.direction$.next(DrawerDirection.BOTTOM);
-      stateMock.isDragging$.next(true);
-      service.dragStartPosition$.next({ x: 0, y: 0 });
-      service.pointerStart$.next({ x: 0, y: 0 });
-      service.isAllowedToDrag$.next(true);
+      stateMock.direction.set(DrawerDirection.BOTTOM);
+      stateMock.isDragging.set(true);
+      service.dragStartPosition.set({ x: 0, y: 0 });
+      service.pointerStart.set({ x: 0, y: 0 });
+      service.isAllowedToDrag.set(true);
 
       const event = dispatchPointerEventOn(mockDrawer, { clientX: 0, clientY: 100, buttons: 1 });
       service.onDrag(event, mockDrawer, true);
@@ -176,29 +176,29 @@ describe('DrawerDragService', () => {
   describe('onRelease', () => {
     it('should do nothing when element is not provided', () => {
       service.onRelease(new PointerEvent('pointerup'), DrawerDirection.BOTTOM);
-      expect(service.dragEndTime$.value).toBeNull();
+      expect(service.dragEndTime()).toBeNull();
     });
 
     it('should do nothing when event is null', () => {
       service.onRelease(null, DrawerDirection.BOTTOM, mockDrawer);
-      expect(service.dragEndTime$.value).toBeNull();
+      expect(service.dragEndTime()).toBeNull();
     });
 
     it('should clear pointer start on release', () => {
-      service.pointerStart$.next({ x: 100, y: 200 });
+      service.pointerStart.set({ x: 100, y: 200 });
       service.onRelease(new PointerEvent('pointerup'), DrawerDirection.BOTTOM, mockDrawer);
-      expect(service.pointerStart$.value).toBeNull();
+      expect(service.pointerStart()).toBeNull();
     });
 
     it('should do nothing when not dragging', () => {
-      stateMock.isDragging$.next(false);
+      stateMock.isDragging.set(false);
       service.onRelease(new PointerEvent('pointerup'), DrawerDirection.BOTTOM, mockDrawer);
-      expect(service.dragEndTime$.value).toBeNull();
+      expect(service.dragEndTime()).toBeNull();
     });
 
     it('should set isDragging to false on release', () => {
-      stateMock.isDragging$.next(true);
-      service.dragStartPosition$.next({ x: 0, y: 0 });
+      stateMock.isDragging.set(true);
+      service.dragStartPosition.set({ x: 0, y: 0 });
 
       service.onRelease(new PointerEvent('pointerup', { clientX: 0, clientY: 0 }), DrawerDirection.BOTTOM, mockDrawer);
 
@@ -206,16 +206,16 @@ describe('DrawerDragService', () => {
     });
 
     it('should record drag end time', () => {
-      stateMock.isDragging$.next(true);
-      service.dragStartPosition$.next({ x: 0, y: 0 });
+      stateMock.isDragging.set(true);
+      service.dragStartPosition.set({ x: 0, y: 0 });
 
       const before = Date.now();
       service.onRelease(new PointerEvent('pointerup', { clientX: 0, clientY: 0 }), DrawerDirection.BOTTOM, mockDrawer);
       const after = Date.now();
 
-      expect(service.dragEndTime$.value).toBeTruthy();
-      expect(service.dragEndTime$.value!.getTime()).toBeGreaterThanOrEqual(before);
-      expect(service.dragEndTime$.value!.getTime()).toBeLessThanOrEqual(after);
+      expect(service.dragEndTime()).toBeTruthy();
+      expect(service.dragEndTime()!.getTime()).toBeGreaterThanOrEqual(before);
+      expect(service.dragEndTime()!.getTime()).toBeLessThanOrEqual(after);
     });
   });
 
@@ -275,13 +275,13 @@ describe('DrawerDragService', () => {
     });
 
     it('should reset element transform to translate3d(0,0,0) when no active snap point', () => {
-      snapMock.activeSnapPoint$.next(null);
+      snapMock.activeSnapPoint.set(null);
       service.resetDrawer(DrawerDirection.BOTTOM, mockDrawer);
       expect(mockDrawer.style.transform).toContain('translate3d(0, 0, 0)');
     });
 
     it('should call snapToPoint when there is an active snap point', () => {
-      snapMock.activeSnapPoint$.next(0.5);
+      snapMock.activeSnapPoint.set(0.5);
       service.resetDrawer(DrawerDirection.BOTTOM, mockDrawer);
       expect(snapMock.snapToPoint).toHaveBeenCalledWith(0.5);
     });
@@ -295,7 +295,7 @@ describe('DrawerDragService', () => {
 
     it('should remove DRAG_CLASS and call setIsDragging(false) when dragging', () => {
       mockDrawer.classList.add(DRAG_CLASS);
-      stateMock.isDragging$.next(true);
+      stateMock.isDragging.set(true);
 
       service.closeDrawer(mockDrawer);
 

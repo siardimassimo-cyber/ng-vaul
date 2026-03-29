@@ -1,5 +1,4 @@
-import { Injectable, inject } from '@angular/core';
-import { Subject, takeUntil } from 'rxjs';
+import { effect, Injectable, inject } from '@angular/core';
 import { isIOS } from './browser';
 import { DrawerService } from './drawer.service';
 import { chain, isInput, isVertical } from '../utils/helpers';
@@ -11,17 +10,15 @@ const KEYBOARD_BUFFER = 24;
 })
 export class PreventScrollService {
   private readonly drawerService = inject(DrawerService);
-  private readonly destroy$ = new Subject<void>();
   private preventScrollCount = 0;
   private restore: (() => void) | undefined;
   private readonly visualViewport = typeof window !== 'undefined' ? window.visualViewport : null;
 
   constructor() {
-    // Watch for drawer open state changes
-    this.drawerService.isOpen$.pipe(takeUntil(this.destroy$)).subscribe((isOpen) => {
-      const isDisabled = !isOpen;
+    effect(() => {
+      const isOpen = this.drawerService.isOpen();
 
-      if (isDisabled) {
+      if (!isOpen) {
         return;
       }
 
@@ -34,7 +31,6 @@ export class PreventScrollService {
 
       const scrollbarWidth = window.innerWidth - documentElement.clientWidth;
 
-      // Handle iOS specific scroll prevention
       if (isIOS()) {
         const scrollY = window.scrollY;
         const fill = scrollbarWidth > 0;
@@ -58,7 +54,6 @@ export class PreventScrollService {
         return;
       }
 
-      // Handle other browsers
       const target = documentElement;
       const { scrollbarGutter } = getComputedStyle(target);
       const hasScrollbarGutter = scrollbarGutter === 'stable';
@@ -83,8 +78,6 @@ export class PreventScrollService {
       this.restore();
       this.restore = undefined;
     }
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   private isScrollable(node: Element): boolean {
@@ -136,7 +129,7 @@ export class PreventScrollService {
 
     const onTouchEnd = (e: TouchEvent) => {
       const target = e.target as HTMLElement;
-      const direction = this.drawerService.direction$.getValue();
+      const direction = this.drawerService.direction();
       if (isInput(target) && target !== document.activeElement) {
         e.preventDefault();
         target.style.transform = isVertical(direction) ? 'translateY(-2000px)' : 'translateX(-2000px)';
@@ -171,7 +164,6 @@ export class PreventScrollService {
       window.scrollTo(0, 0);
     };
 
-    // Record initial scroll position
     const scrollX = window.pageXOffset;
     const scrollY = window.pageYOffset;
 
@@ -183,7 +175,6 @@ export class PreventScrollService {
       ),
     );
 
-    // Scroll to top
     window.scrollTo(0, 0);
 
     const removeEvents = chain(
@@ -238,5 +229,4 @@ export class PreventScrollService {
       target.removeEventListener(event, handler as EventListener, options);
     };
   }
-
 }

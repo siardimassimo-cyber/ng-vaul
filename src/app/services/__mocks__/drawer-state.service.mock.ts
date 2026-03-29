@@ -1,58 +1,35 @@
-import { BehaviorSubject } from 'rxjs';
+import { signal } from '@angular/core';
 import { DrawerDirection, DrawerDirectionType } from '../../types';
 
 export const createDrawerStateMock = () => ({
-  stateChange$: new BehaviorSubject<void>(undefined),
-  isOpen$: new BehaviorSubject<boolean>(false),
-  isDragging$: new BehaviorSubject<boolean>(false),
-  drawerRef$: new BehaviorSubject<HTMLDivElement | null>(null),
-  overlayRef$: new BehaviorSubject<HTMLElement | null>(null),
-  direction$: new BehaviorSubject<DrawerDirectionType>(DrawerDirection.BOTTOM),
-  hasBeenOpened$: new BehaviorSubject<boolean>(false),
-  openTime$: new BehaviorSubject<Date | null>(null),
-  shouldScaleBackground$: new BehaviorSubject<boolean>(false),
-  setBackgroundColorOnScale$: new BehaviorSubject<boolean>(false),
-  noBodyStyles$: new BehaviorSubject<boolean>(false),
-  nested$: new BehaviorSubject<boolean>(false),
-  modal$: new BehaviorSubject<boolean>(false),
-  preventScrollRestoration$: new BehaviorSubject<boolean>(false),
+  stateChange: signal<void>(undefined),
+  isOpen: signal<boolean>(false),
+  isDragging: signal<boolean>(false),
+  drawerRef: signal<HTMLDivElement | null>(null),
+  overlayRef: signal<HTMLElement | null>(null),
+  direction: signal<DrawerDirectionType>(DrawerDirection.BOTTOM),
+  hasBeenOpened: signal<boolean>(false),
+  openTime: signal<Date | null>(null),
+  shouldScaleBackground: signal<boolean>(false),
+  backgroundColorOnScale: signal<boolean>(false),
+  noBodyStyles: signal<boolean>(false),
+  nested: signal<boolean>(false),
+  modal: signal<boolean>(false),
+  preventScrollRestoration: signal<boolean>(false),
 
-  setIsOpen: (isOpen: boolean) => {
-    // implementation
-  },
-  setIsDragging: (isDragging: boolean) => {
-    // implementation
-  },
-  setDirection: (direction: DrawerDirectionType) => {
-    // implementation
-  },
-  setDrawerRef: (ref: HTMLDivElement | null) => {
-    // implementation
-  },
-  setOverlayRef: (ref: HTMLElement | null) => {
-    // implementation
-  },
-  setScaleBackground: (value: boolean) => {
-    // implementation
-  },
-  setBackgroundColor: (value: boolean) => {
-    // implementation
-  },
-  setNoBodyStyles: (value: boolean) => {
-    // implementation
-  },
-  setNested: (value: boolean) => {
-    // implementation
-  },
-  setModal: (value: boolean) => {
-    // implementation
-  },
-  setHasBeenOpened: (value: boolean) => {
-    // implementation
-  },
-  setPreventScrollRestoration: (value: boolean) => {
-    // implementation
-  },
+  setIsOpen: (isOpen: boolean) => {},
+  setIsDragging: (isDragging: boolean) => {},
+  setDirection: (direction: DrawerDirectionType) => {},
+  setDrawerRef: (ref: HTMLDivElement | null) => {},
+  setOverlayRef: (ref: HTMLElement | null) => {},
+  setScaleBackground: (value: boolean) => {},
+  setBackgroundColor: (value: boolean) => {},
+  setNoBodyStyles: (value: boolean) => {},
+  setNested: (value: boolean) => {},
+  setModal: (value: boolean) => {},
+  setHasBeenOpened: (value: boolean) => {},
+  setPreventScrollRestoration: (value: boolean) => {},
+  setOpenTime: (date: Date | null) => {},
   getShouldScaleBackground: () => false,
   getBackgroundColorOnScale: () => false,
   getNoBodyStyles: () => false,
@@ -60,7 +37,5 @@ export const createDrawerStateMock = () => ({
   getModal: () => false,
   getHasBeenOpened: () => false,
   getPreventScrollRestoration: () => false,
-  ngOnDestroy: () => {
-    // implementation
-  },
+  ngOnDestroy: () => {},
 });

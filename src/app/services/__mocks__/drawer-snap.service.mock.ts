@@ -1,30 +1,26 @@
-import { BehaviorSubject, combineLatest, map } from 'rxjs';
+import { computed, signal } from '@angular/core';
 import { SnapPoint } from '../../types';
 
-export const createDrawerSnapMock = () => ({
-  snapPoints$: new BehaviorSubject<SnapPoint[] | null>(null),
-  activeSnapPoint$: new BehaviorSubject<SnapPoint | null>(null),
-  fadeFromIndex$: new BehaviorSubject<number | undefined>(undefined),
-  snapToSequentialPoint$: new BehaviorSubject<boolean>(false),
+export const createDrawerSnapMock = () => {
+  const snapPoints = signal<SnapPoint[] | null>(null);
+  const activeSnapPoint = signal<SnapPoint | null>(null);
 
-  activeSnapPointIndex$: combineLatest([
-    new BehaviorSubject<SnapPoint[] | null>(null),
-    new BehaviorSubject<SnapPoint | null>(null),
-  ]).pipe(
-    map(([snapPoints, activeSnapPoint]) => {
-      if (!snapPoints || activeSnapPoint === null) return null;
-      return snapPoints.indexOf(activeSnapPoint);
+  return {
+    snapPoints,
+    activeSnapPoint,
+    fadeFromIndex: signal<number | undefined>(undefined),
+    snapToSequentialPoint: signal<boolean>(false),
+
+    activeSnapPointIndex: computed(() => {
+      const sp = snapPoints();
+      const asp = activeSnapPoint();
+      if (!sp || asp === null) return null;
+      return sp.indexOf(asp);
     }),
-  ),
 
-  getSnapPointsOffset: () => [],
-  snapToPoint: (snapPoint: SnapPoint) => {
-    // implementation
-  },
-  goToAdjacentSnap: (step: 1 | -1) => {
-    // implementation
-  },
-  ngOnDestroy: () => {
-    // implementation
-  },
-});
+    getSnapPointsOffset: () => [],
+    snapToPoint: (snapPoint: SnapPoint) => {},
+    goToAdjacentSnap: (step: 1 | -1) => {},
+    ngOnDestroy: () => {},
+  };
+};

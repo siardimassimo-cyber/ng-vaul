@@ -1,123 +1,96 @@
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { computed, signal } from '@angular/core';
 import { DrawerDirection, DrawerDirectionType, SnapPoint } from '../../types';
 
-export const createDrawerServiceMock = () => ({
-  // State re-exports
-  stateChange$: new BehaviorSubject<void>(undefined),
-  isOpen$: new BehaviorSubject<boolean>(false),
-  isDragging$: new BehaviorSubject<boolean>(false),
-  isDraggingObs$: new BehaviorSubject<boolean>(false).asObservable(),
-  drawerRef$: new BehaviorSubject<HTMLDivElement | null>(null),
-  drawerRefObs$: new BehaviorSubject<HTMLDivElement | null>(null).asObservable(),
-  overlayRef$: new BehaviorSubject<HTMLElement | null>(null),
-  direction$: new BehaviorSubject<DrawerDirectionType>(DrawerDirection.BOTTOM),
-  hasBeenOpened$: new BehaviorSubject<boolean>(false),
-  openTime$: new BehaviorSubject<Date | null>(null),
-  shouldScaleBackground$: new BehaviorSubject<boolean>(false),
-  setBackgroundColorOnScale$: new BehaviorSubject<boolean>(false),
-  noBodyStyles$: new BehaviorSubject<boolean>(false),
-  nested$: new BehaviorSubject<boolean>(false),
-  modal$: new BehaviorSubject<boolean>(false),
-  preventScrollRestoration$: new BehaviorSubject<boolean>(false),
+export const createDrawerServiceMock = () => {
+  const isOpen = signal<boolean>(false);
+  const isDragging = signal<boolean>(false);
+  const drawerRef = signal<HTMLDivElement | null>(null);
+  const snapPoints = signal<SnapPoint[] | null>(null);
+  const activeSnapPoint = signal<SnapPoint | null>(null);
 
-  // Drag re-exports
-  pointerStart$: new BehaviorSubject<{ x: number; y: number } | null>(null),
-  dragStartPosition$: new BehaviorSubject<{ x: number; y: number } | null>(null),
-  currentPointerPositionObs$: new BehaviorSubject<{ x: number; y: number } | null>(null).asObservable(),
-  wasBeyondThePoint$: new BehaviorSubject<boolean | null>(null),
-  dragEndTime$: new BehaviorSubject<Date | null>(null),
-  dragStartTime$: new BehaviorSubject<Date | null>(null),
-  isAllowedToDrag$: new BehaviorSubject<boolean>(false),
+  return {
+    // State re-exports
+    stateChange: signal<void>(undefined),
+    isOpen,
+    isDragging,
+    drawerRef,
+    overlayRef: signal<HTMLElement | null>(null),
+    direction: signal<DrawerDirectionType>(DrawerDirection.BOTTOM),
+    hasBeenOpened: signal<boolean>(false),
+    openTime: signal<Date | null>(null),
+    shouldScaleBackground: signal<boolean>(false),
+    backgroundColorOnScale: signal<boolean>(false),
+    noBodyStyles: signal<boolean>(false),
+    nested: signal<boolean>(false),
+    modal: signal<boolean>(false),
+    preventScrollRestoration: signal<boolean>(false),
 
-  // Snap re-exports
-  snapPoints$: new BehaviorSubject<SnapPoint[] | null>(null),
-  activeSnapPoint$: new BehaviorSubject<SnapPoint | null>(null),
-  fadeFromIndex$: new BehaviorSubject<number | undefined>(undefined),
-  snapToSequentialPoint$: new BehaviorSubject<boolean>(false),
-  activeSnapPointIndex$: new Observable<number | null>(),
+    // Drag re-exports
+    pointerStart: signal<{ x: number; y: number } | null>(null),
+    dragStartPosition: signal<{ x: number; y: number } | null>(null),
+    currentPointerPosition: signal<{ x: number; y: number } | null>(null),
+    wasBeyondThePoint: signal<boolean | null>(null),
+    dragEndTime: signal<Date | null>(null),
+    dragStartTime: signal<Date | null>(null),
+    isAllowedToDrag: signal<boolean>(false),
 
-  drawerTransform$: new Observable<string | null>(),
+    // Snap re-exports
+    snapPoints,
+    activeSnapPoint,
+    fadeFromIndex: signal<number | undefined>(undefined),
+    snapToSequentialPoint: signal<boolean>(false),
+    activeSnapPointIndex: computed(() => {
+      const sp = snapPoints();
+      const asp = activeSnapPoint();
+      if (!sp || asp === null) return null;
+      return sp.indexOf(asp);
+    }),
 
-  // State delegates
-  setIsOpen: (isOpen: boolean): void => {
-    // implementation
-  },
-  setIsDragging: (isDragging: boolean): void => {
-    // implementation
-  },
-  setDirection: (direction: DrawerDirectionType): void => {
-    // implementation
-  },
-  setDrawerRef: (ref: HTMLDivElement | null): void => {
-    // implementation
-  },
-  setOverlayRef: (ref: HTMLElement | null): void => {
-    // implementation
-  },
-  setScaleBackground: (value: boolean): void => {
-    // implementation
-  },
-  setBackgroundColor: (value: boolean): void => {
-    // implementation
-  },
-  setNoBodyStyles: (value: boolean): void => {
-    // implementation
-  },
-  setNested: (value: boolean): void => {
-    // implementation
-  },
-  setModal: (value: boolean): void => {
-    // implementation
-  },
-  setHasBeenOpened: (value: boolean): void => {
-    // implementation
-  },
-  setPreventScrollRestoration: (value: boolean): void => {
-    // implementation
-  },
-  shouldScaleBackground: (): boolean => false,
-  setBackgroundColorOnScale: (): boolean => false,
-  noBodyStyles: (): boolean => false,
-  nested: (): boolean => false,
-  modal: (): boolean => false,
-  hasBeenOpened: (): boolean => false,
-  preventScrollRestoration: (): boolean => false,
+    drawerTransform: computed((): string | null => null),
 
-  // Drag delegates
-  onPress: (event: PointerEvent, element?: HTMLDivElement): void => {
-    // implementation
-  },
-  onDrag: (event: DragEvent | PointerEvent, element?: HTMLDivElement, dismissible?: boolean): void => {
-    // implementation
-  },
-  onRelease: (event: PointerEvent | null, direction: DrawerDirectionType, element?: HTMLDivElement): void => {
-    // implementation
-  },
-  shouldDrag: (el: EventTarget, isDraggingInDirection: boolean): boolean => false,
-  resetDrawer: (direction: DrawerDirectionType, element?: HTMLDivElement): void => {
-    // implementation
-  },
-  closeDrawer: (drawer: HTMLDivElement): void => {
-    // implementation
-  },
+    // State delegates
+    setIsOpen: (isOpen: boolean): void => {},
+    setIsDragging: (isDragging: boolean): void => {},
+    setDirection: (direction: DrawerDirectionType): void => {},
+    setDrawerRef: (ref: HTMLDivElement | null): void => {},
+    setOverlayRef: (ref: HTMLElement | null): void => {},
+    setScaleBackground: (value: boolean): void => {},
+    setBackgroundColor: (value: boolean): void => {},
+    setNoBodyStyles: (value: boolean): void => {},
+    setNested: (value: boolean): void => {},
+    setModal: (value: boolean): void => {},
+    setHasBeenOpened: (value: boolean): void => {},
+    setPreventScrollRestoration: (value: boolean): void => {},
+    setOpenTime: (date: Date | null): void => {},
 
-  // Snap delegates
-  getSnapPointsOffset: (): number[] => [],
-  goToAdjacentSnap: (step: 1 | -1): void => {
-    // implementation
-  },
+    // Snap delegates
+    setSnapPoints: (value: SnapPoint[] | null): void => {},
+    setActiveSnapPoint: (value: SnapPoint | null): void => {},
+    setFadeFromIndex: (value: number | undefined): void => {},
+    setSnapToSequentialPoint: (value: boolean): void => {},
 
-  // DOM delegates
-  getTranslateBasedOnDirection: ({
-    drawer,
-    direction,
-  }: {
-    drawer: HTMLDivElement;
-    direction: DrawerDirectionType;
-  }): number => 0,
-  getScale: (): number => 0.974,
+    // Drag delegates
+    onPress: (event: PointerEvent, element?: HTMLDivElement): void => {},
+    onDrag: (event: DragEvent | PointerEvent, element?: HTMLDivElement, dismissible?: boolean): void => {},
+    onRelease: (event: PointerEvent | null, direction: DrawerDirectionType, element?: HTMLDivElement): void => {},
+    shouldDrag: (el: EventTarget, isDraggingInDirection: boolean): boolean => false,
+    resetDrawer: (direction: DrawerDirectionType, element?: HTMLDivElement): void => {},
+    closeDrawer: (drawer: HTMLDivElement): void => {},
 
-  ngOnDestroy: (): void => {
-    // implementation
-  },
-});
+    // Snap delegates
+    getSnapPointsOffset: (): number[] => [],
+    goToAdjacentSnap: (step: 1 | -1): void => {},
+
+    // DOM delegates
+    getTranslateBasedOnDirection: ({
+      drawer,
+      direction,
+    }: {
+      drawer: HTMLDivElement;
+      direction: DrawerDirectionType;
+    }): number => 0,
+    getScale: (): number => 0.974,
+
+    ngOnDestroy: (): void => {},
+  };
+};

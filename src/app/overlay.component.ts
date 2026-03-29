@@ -1,4 +1,3 @@
-import { AsyncPipe } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -6,10 +5,8 @@ import {
   ElementRef,
   inject,
   input,
-  OnDestroy,
   viewChild,
 } from '@angular/core';
-import { Subject } from 'rxjs';
 import { DrawerService } from './services/drawer.service';
 import { DrawerDirection, DrawerDirectionType } from './types';
 
@@ -23,9 +20,9 @@ import { DrawerDirection, DrawerDirectionType } from './types';
       class="vaul-overlay"
       #overlayRef
       [attr.data-vaul-overlay]=""
-      [attr.data-state]="(isOpen$ | async) ? 'open' : 'closed'"
+      [attr.data-state]="drawerService.isOpen() ? 'open' : 'closed'"
       [attr.aria-label]="'Close drawer overlay'"
-      [attr.aria-hidden]="(isOpen$ | async) ? null : 'true'"
+      [attr.aria-hidden]="drawerService.isOpen() ? null : 'true'"
       (click)="close()"
       (pointerup)="onRelease($event)"
     ></button>
@@ -58,28 +55,20 @@ import { DrawerDirection, DrawerDirectionType } from './types';
       }
     `,
   ],
-  imports: [AsyncPipe],
+  imports: [],
 })
-export class OverlayComponent implements AfterViewInit, OnDestroy {
-  private readonly drawerService = inject(DrawerService);
-  private readonly destroy$ = new Subject<void>();
+export class OverlayComponent implements AfterViewInit {
+  readonly drawerService = inject(DrawerService);
   public direction = input<DrawerDirectionType>(DrawerDirection.BOTTOM);
   /** When false, pointer clicks on the overlay do not close the drawer. */
   readonly dismissible = input(true);
 
   overlayRef = viewChild<ElementRef<HTMLButtonElement>>('overlayRef');
 
-  readonly isOpen$ = this.drawerService.isOpen$;
-
   ngAfterViewInit() {
     const overlayRef = this.overlayRef();
     if (!overlayRef) return;
     this.drawerService.setOverlayRef(overlayRef.nativeElement);
-  }
-
-  ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   close() {

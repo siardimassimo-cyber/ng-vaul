@@ -1,5 +1,4 @@
-import { inject, Injectable } from '@angular/core';
-import { BehaviorSubject, combineLatest, map } from 'rxjs';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { DrawerDirection, SnapPoint } from '../types';
 import { TRANSITIONS } from './constants';
 import { isVertical, set } from '../utils/helpers';
@@ -9,22 +8,38 @@ import { DrawerStateService } from './drawer-state.service';
 export class DrawerSnapService {
   private readonly state = inject(DrawerStateService);
 
-  readonly snapPoints$ = new BehaviorSubject<SnapPoint[] | null>(null);
-  readonly activeSnapPoint$ = new BehaviorSubject<SnapPoint | null>(null);
-  readonly fadeFromIndex$ = new BehaviorSubject<number | undefined>(undefined);
-  readonly snapToSequentialPoint$ = new BehaviorSubject<boolean>(false);
+  readonly snapPoints = signal<SnapPoint[] | null>(null);
+  readonly activeSnapPoint = signal<SnapPoint | null>(null);
+  readonly fadeFromIndex = signal<number | undefined>(undefined);
+  readonly snapToSequentialPoint = signal<boolean>(false);
 
-  readonly activeSnapPointIndex$ = combineLatest([this.snapPoints$, this.activeSnapPoint$]).pipe(
-    map(([snapPoints, activeSnapPoint]) => {
-      if (!snapPoints || activeSnapPoint === null) return null;
-      return snapPoints.indexOf(activeSnapPoint);
-    }),
-  );
+  readonly activeSnapPointIndex = computed(() => {
+    const snapPoints = this.snapPoints();
+    const activeSnapPoint = this.activeSnapPoint();
+    if (!snapPoints || activeSnapPoint === null) return null;
+    return snapPoints.indexOf(activeSnapPoint);
+  });
+
+  setSnapPoints(value: SnapPoint[] | null): void {
+    this.snapPoints.set(value);
+  }
+
+  setActiveSnapPoint(value: SnapPoint | null): void {
+    this.activeSnapPoint.set(value);
+  }
+
+  setFadeFromIndex(value: number | undefined): void {
+    this.fadeFromIndex.set(value);
+  }
+
+  setSnapToSequentialPoint(value: boolean): void {
+    this.snapToSequentialPoint.set(value);
+  }
 
   getSnapPointsOffset(): number[] {
-    const snapPoints = this.snapPoints$.value;
-    const drawer = this.state.drawerRef$.value;
-    const direction = this.state.direction$.value;
+    const snapPoints = this.snapPoints();
+    const drawer = this.state.drawerRef();
+    const direction = this.state.direction();
     if (!snapPoints || !drawer) return [];
 
     const rect = drawer.getBoundingClientRect();
@@ -43,23 +58,23 @@ export class DrawerSnapService {
   }
 
   snapToPoint(snapPoint: SnapPoint): void {
-    const drawer = this.state.drawerRef$.value;
-    const direction = this.state.direction$.value;
+    const drawer = this.state.drawerRef();
+    const direction = this.state.direction();
     if (!drawer) return;
 
-    const index = this.snapPoints$.value?.indexOf(snapPoint) ?? -1;
+    const index = this.snapPoints()?.indexOf(snapPoint) ?? -1;
     if (index === -1) return;
 
     const offset = this.getSnapPointsOffset()[index];
-    this.activeSnapPoint$.next(snapPoint);
+    this.activeSnapPoint.set(snapPoint);
 
     set(drawer, {
       transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(',')})`,
       transform: isVertical(direction) ? `translate3d(0, ${offset}px, 0)` : `translate3d(${offset}px, 0, 0)`,
     });
 
-    const fadeFromIndex = this.fadeFromIndex$.value;
-    const overlay = this.state.overlayRef$.value;
+    const fadeFromIndex = this.fadeFromIndex();
+    const overlay = this.state.overlayRef();
     if (overlay && fadeFromIndex !== undefined) {
       set(overlay, {
         transition: `opacity ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(',')})`,
@@ -70,11 +85,11 @@ export class DrawerSnapService {
 
   /** Moves the active snap by one step (used for a11y / automation when pointer-drag is unavailable). */
   goToAdjacentSnap(step: 1 | -1): void {
-    if (!this.state.isOpen$.value) return;
-    const snapPoints = this.snapPoints$.value;
+    if (!this.state.isOpen()) return;
+    const snapPoints = this.snapPoints();
     if (!snapPoints?.length) return;
 
-    const current = this.activeSnapPoint$.value ?? snapPoints[0];
+    const current = this.activeSnapPoint() ?? snapPoints[0];
     const i = snapPoints.indexOf(current);
     if (i === -1) return;
 
@@ -84,9 +99,6 @@ export class DrawerSnapService {
   }
 
   ngOnDestroy(): void {
-    this.snapPoints$.complete();
-    this.activeSnapPoint$.complete();
-    this.fadeFromIndex$.complete();
-    this.snapToSequentialPoint$.complete();
+    // Signals clean up automatically; method kept for backward compatibility
   }
 }

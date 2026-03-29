@@ -47,12 +47,12 @@ describe('DrawerService (Facade)', () => {
     });
 
     it('should have initial closed state', () => {
-      expect(service.isOpen$.value).toBe(false);
-      expect(service.isDragging$.value).toBe(false);
+      expect(service.isOpen()).toBe(false);
+      expect(service.isDragging()).toBe(false);
     });
 
     it('should have default direction BOTTOM', () => {
-      expect(service.direction$.value).toBe(DrawerDirection.BOTTOM);
+      expect(service.direction()).toBe(DrawerDirection.BOTTOM);
     });
   });
 
@@ -75,24 +75,24 @@ describe('DrawerService (Facade)', () => {
       expect(spy).toHaveBeenCalledWith(true);
     });
 
-    it('should expose isOpen$ from state service', () => {
-      expect(service.isOpen$).toBe(stateService.isOpen$);
+    it('should expose isOpen signal from state service', () => {
+      expect(service.isOpen).toBe(stateService.isOpen);
     });
 
-    it('should expose direction$ from state service', () => {
-      expect(service.direction$).toBe(stateService.direction$);
+    it('should expose direction signal from state service', () => {
+      expect(service.direction).toBe(stateService.direction);
     });
 
-    it('should expose isDragging$ from state service', () => {
-      expect(service.isDragging$).toBe(stateService.isDragging$);
+    it('should expose isDragging signal from state service', () => {
+      expect(service.isDragging).toBe(stateService.isDragging);
     });
 
-    it('should expose drawerRef$ from state service', () => {
-      expect(service.drawerRef$).toBe(stateService.drawerRef$);
+    it('should expose drawerRef signal from state service', () => {
+      expect(service.drawerRef).toBe(stateService.drawerRef);
     });
 
-    it('should expose hasBeenOpened$ from state service', () => {
-      expect(service.hasBeenOpened$).toBe(stateService.hasBeenOpened$);
+    it('should expose hasBeenOpened signal from state service', () => {
+      expect(service.hasBeenOpened).toBe(stateService.hasBeenOpened);
     });
 
     describe('Flag Getters/Setters', () => {
@@ -130,7 +130,7 @@ describe('DrawerService (Facade)', () => {
 
       it('should delegate backgroundColorOnScale flag', () => {
         service.setBackgroundColor(true);
-        expect(service.setBackgroundColorOnScale()).toBe(true);
+        expect(service.backgroundColorOnScale()).toBe(true);
       });
     });
   });
@@ -181,16 +181,16 @@ describe('DrawerService (Facade)', () => {
       expect(spy).toHaveBeenCalledWith(mockElement);
     });
 
-    it('should expose pointerStart$ from drag service', () => {
-      expect(service.pointerStart$).toBe(dragService.pointerStart$);
+    it('should expose pointerStart signal from drag service', () => {
+      expect(service.pointerStart).toBe(dragService.pointerStart);
     });
 
-    it('should expose dragStartPosition$ from drag service', () => {
-      expect(service.dragStartPosition$).toBe(dragService.dragStartPosition$);
+    it('should expose dragStartPosition signal from drag service', () => {
+      expect(service.dragStartPosition).toBe(dragService.dragStartPosition);
     });
 
-    it('should expose isAllowedToDrag$ from drag service', () => {
-      expect(service.isAllowedToDrag$).toBe(dragService.isAllowedToDrag$);
+    it('should expose isAllowedToDrag signal from drag service', () => {
+      expect(service.isAllowedToDrag).toBe(dragService.isAllowedToDrag);
     });
   });
 
@@ -207,16 +207,16 @@ describe('DrawerService (Facade)', () => {
       expect(spy).toHaveBeenCalledWith(1);
     });
 
-    it('should expose snapPoints$ from snap service', () => {
-      expect(service.snapPoints$).toBe(snapService.snapPoints$);
+    it('should expose snapPoints signal from snap service', () => {
+      expect(service.snapPoints).toBe(snapService.snapPoints);
     });
 
-    it('should expose activeSnapPoint$ from snap service', () => {
-      expect(service.activeSnapPoint$).toBe(snapService.activeSnapPoint$);
+    it('should expose activeSnapPoint signal from snap service', () => {
+      expect(service.activeSnapPoint).toBe(snapService.activeSnapPoint);
     });
 
-    it('should expose activeSnapPointIndex$ from snap service', () => {
-      expect(service.activeSnapPointIndex$).toBe(snapService.activeSnapPointIndex$);
+    it('should expose activeSnapPointIndex computed from snap service', () => {
+      expect(service.activeSnapPointIndex).toBe(snapService.activeSnapPointIndex);
     });
   });
 
@@ -240,7 +240,7 @@ describe('DrawerService (Facade)', () => {
       const ref = createMockHTMLElement({ offsetHeight: 500, offsetWidth: 300 });
       service.setDirection(DrawerDirection.BOTTOM);
       service.setDrawerRef(ref);
-      expect(service.drawerRef$.value).toBe(ref);
+      expect(service.drawerRef()).toBe(ref);
       expect(ref.style.transform).toBe('translateY(500px)');
     });
 
@@ -267,7 +267,7 @@ describe('DrawerService (Facade)', () => {
 
     it('should allow setting drawer ref to null', () => {
       service.setDrawerRef(null);
-      expect(service.drawerRef$.value).toBeNull();
+      expect(service.drawerRef()).toBeNull();
     });
   });
 
@@ -275,83 +275,68 @@ describe('DrawerService (Facade)', () => {
     it('should set overlay ref', () => {
       const mockOverlay = document.createElement('div');
       service.setOverlayRef(mockOverlay);
-      expect(service.overlayRef$.value).toBe(mockOverlay);
+      expect(service.overlayRef()).toBe(mockOverlay);
     });
 
     it('should allow setting overlay ref to null', () => {
       service.setOverlayRef(null);
-      expect(service.overlayRef$.value).toBeNull();
+      expect(service.overlayRef()).toBeNull();
     });
 
-    it('should expose overlayRef$ from state service', () => {
-      expect(service.overlayRef$).toBe(stateService.overlayRef$);
+    it('should expose overlayRef signal from state service', () => {
+      expect(service.overlayRef).toBe(stateService.overlayRef);
     });
   });
 
   describe('Constructor Initialization', () => {
     it('should apply hidden transform when drawer ref is registered and drawer is closed', () => {
-      return new Promise<void>((resolve) => {
-        service.setDirection(DrawerDirection.BOTTOM);
+      service.setDirection(DrawerDirection.BOTTOM);
+      service.setDrawerRef(mockDrawer);
+      TestBed.flushEffects();
 
-        service.drawerRefObs$.subscribe(() => {
-          if (service.drawerRef$.value && !service.isOpen$.value) {
-            expect(service.drawerRef$.value.style.transform).toBe('translateY(500px)');
-            resolve();
-          }
-        });
-
-        service.setDrawerRef(mockDrawer);
-      });
+      if (service.drawerRef() && !service.isOpen()) {
+        expect(service.drawerRef()!.style.transform).toBe('translateY(500px)');
+      }
     });
 
     it('should sync drawer position when opening with snap points', () => {
-      return new Promise<void>((resolve) => {
-        service.setDirection(DrawerDirection.BOTTOM);
-        service.setDrawerRef(mockDrawer);
+      service.setDirection(DrawerDirection.BOTTOM);
+      service.setDrawerRef(mockDrawer);
 
-        snapService.snapPoints$.next([0.5, 1]);
-        snapService.activeSnapPoint$.next(0.5);
+      snapService.snapPoints.set([0.5, 1]);
+      snapService.activeSnapPoint.set(0.5);
 
-        service.isOpen$.subscribe(() => {
-          if (service.isOpen$.value) {
-            expect(service.isOpen$.value).toBe(true);
-            resolve();
-          }
-        });
+      service.setIsOpen(true);
+      TestBed.flushEffects();
 
-        service.setIsOpen(true);
-      });
+      expect(service.isOpen()).toBe(true);
     });
   });
 
-  describe('drawerTransform$ Observable', () => {
-    it('should emit null when drawer ref is not set', () => {
-      let result: string | null = undefined as any;
-      service.drawerTransform$.subscribe((v) => (result = v)).unsubscribe();
-      expect(result).toBeNull();
+  describe('drawerTransform computed signal', () => {
+    it('should return null when drawer ref is not set', () => {
+      TestBed.flushEffects();
+      expect(service.drawerTransform()).toBeNull();
     });
 
     it('should compute vertical transform when drawer is set and not dragging', () => {
       service.setDirection(DrawerDirection.BOTTOM);
       service.setDrawerRef(mockDrawer);
-      let result: string | null = null;
-      service.drawerTransform$.subscribe((v) => (result = v)).unsubscribe();
-      expect(result).toContain('translateY');
+      TestBed.flushEffects();
+      expect(service.drawerTransform()).toContain('translateY');
     });
 
-    it('should compute horizontal transform when drawer is set and not dragging', () => {
+    it('should compute horizontal transform when drawer is set and direction is right', () => {
       service.setDirection(DrawerDirection.RIGHT);
       service.setDrawerRef(mockDrawer);
-      let result: string | null = null;
-      service.drawerTransform$.subscribe((v) => (result = v)).unsubscribe();
-      expect(result).toContain('translateX');
+      TestBed.flushEffects();
+      expect(service.drawerTransform()).toContain('translateX');
     });
   });
 
   describe('Lifecycle', () => {
-    it('should complete observables on destroy', () => {
-      service.isOpen$.subscribe({ complete: vi.fn() });
-      service.ngOnDestroy();
+    it('should not throw on destroy', () => {
+      expect(() => service.ngOnDestroy()).not.toThrow();
       expect(() => service.ngOnDestroy()).not.toThrow();
     });
   });
@@ -361,21 +346,21 @@ describe('DrawerService (Facade)', () => {
       const ref = createMockHTMLElement({ offsetHeight: 500, offsetWidth: 300 });
       service.setDirection(DrawerDirection.BOTTOM);
       service.setDrawerRef(ref);
-      snapService.snapPoints$.next([0.4, 0.8, 1]);
+      snapService.snapPoints.set([0.4, 0.8, 1]);
 
       service.setIsOpen(true);
 
-      expect(service.isOpen$.value).toBe(true);
-      expect(service.hasBeenOpened$.value).toBe(true);
+      expect(service.isOpen()).toBe(true);
+      expect(service.hasBeenOpened()).toBe(true);
     });
 
     it('should toggle between open and closed states', () => {
       service.setIsOpen(true);
-      expect(service.isOpen$.value).toBe(true);
+      expect(service.isOpen()).toBe(true);
 
       service.setIsOpen(false);
-      expect(service.isOpen$.value).toBe(false);
-      expect(service.hasBeenOpened$.value).toBe(true);
+      expect(service.isOpen()).toBe(false);
+      expect(service.hasBeenOpened()).toBe(true);
     });
   });
 });

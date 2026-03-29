@@ -1,10 +1,9 @@
-import { inject, Injectable, OnDestroy } from '@angular/core';
-import { combineLatest, map, Subject, takeUntil } from 'rxjs';
+import { computed, effect, inject, Injectable, untracked } from '@angular/core';
 import { DrawerDomService } from './drawer-dom.service';
 import { DrawerDragService } from './drawer-drag.service';
 import { DrawerSnapService } from './drawer-snap.service';
 import { DrawerStateService } from './drawer-state.service';
-import { DrawerDirectionType } from '../types';
+import { DrawerDirectionType, SnapPoint } from '../types';
 import { isVertical } from '../utils/helpers';
 
 /**
@@ -15,78 +14,77 @@ import { isVertical } from '../utils/helpers';
  * slice of functionality is needed in a new component.
  */
 @Injectable({ providedIn: 'root' })
-export class DrawerService implements OnDestroy {
+export class DrawerService {
   private readonly state = inject(DrawerStateService);
   private readonly dom = inject(DrawerDomService);
   private readonly snap = inject(DrawerSnapService);
   private readonly drag = inject(DrawerDragService);
-  private readonly destroy$ = new Subject<void>();
 
   // ── State re-exports ──────────────────────────────────────────────────────
-  readonly stateChange$ = this.state.stateChange$;
-  readonly isOpen$ = this.state.isOpen$;
-  readonly isDragging$ = this.state.isDragging$;
-  readonly isDraggingObs$ = this.state.isDragging$.asObservable();
-  readonly drawerRef$ = this.state.drawerRef$;
-  readonly drawerRefObs$ = this.state.drawerRef$.asObservable();
-  readonly overlayRef$ = this.state.overlayRef$;
-  readonly direction$ = this.state.direction$;
-  readonly hasBeenOpened$ = this.state.hasBeenOpened$;
-  readonly openTime$ = this.state.openTime$;
-  readonly shouldScaleBackground$ = this.state.shouldScaleBackground$;
-  readonly setBackgroundColorOnScale$ = this.state.setBackgroundColorOnScale$;
-  readonly noBodyStyles$ = this.state.noBodyStyles$;
-  readonly nested$ = this.state.nested$;
-  readonly modal$ = this.state.modal$;
-  readonly preventScrollRestoration$ = this.state.preventScrollRestoration$;
+  readonly stateChange = this.state.stateChange;
+  readonly isOpen = this.state.isOpen;
+  readonly isDragging = this.state.isDragging;
+  readonly drawerRef = this.state.drawerRef;
+  readonly overlayRef = this.state.overlayRef;
+  readonly direction = this.state.direction;
+  readonly hasBeenOpened = this.state.hasBeenOpened;
+  readonly openTime = this.state.openTime;
+  readonly shouldScaleBackground = this.state.shouldScaleBackground;
+  readonly backgroundColorOnScale = this.state.backgroundColorOnScale;
+  readonly noBodyStyles = this.state.noBodyStyles;
+  readonly nested = this.state.nested;
+  readonly modal = this.state.modal;
+  readonly preventScrollRestoration = this.state.preventScrollRestoration;
 
   // ── Drag re-exports ───────────────────────────────────────────────────────
-  readonly pointerStart$ = this.drag.pointerStart$;
-  readonly dragStartPosition$ = this.drag.dragStartPosition$;
-  readonly currentPointerPositionObs$ = this.drag.currentPointerPositionObs$;
-  readonly wasBeyondThePoint$ = this.drag.wasBeyondThePoint$;
-  readonly dragEndTime$ = this.drag.dragEndTime$;
-  readonly dragStartTime$ = this.drag.dragStartTime$;
-  readonly isAllowedToDrag$ = this.drag.isAllowedToDrag$;
+  readonly pointerStart = this.drag.pointerStart;
+  readonly dragStartPosition = this.drag.dragStartPosition;
+  readonly currentPointerPosition = this.drag.currentPointerPosition;
+  readonly wasBeyondThePoint = this.drag.wasBeyondThePoint;
+  readonly dragEndTime = this.drag.dragEndTime;
+  readonly dragStartTime = this.drag.dragStartTime;
+  readonly isAllowedToDrag = this.drag.isAllowedToDrag;
 
   // ── Snap re-exports ───────────────────────────────────────────────────────
-  readonly snapPoints$ = this.snap.snapPoints$;
-  readonly activeSnapPoint$ = this.snap.activeSnapPoint$;
-  readonly fadeFromIndex$ = this.snap.fadeFromIndex$;
-  readonly snapToSequentialPoint$ = this.snap.snapToSequentialPoint$;
-  readonly activeSnapPointIndex$ = this.snap.activeSnapPointIndex$;
+  readonly snapPoints = this.snap.snapPoints;
+  readonly activeSnapPoint = this.snap.activeSnapPoint;
+  readonly fadeFromIndex = this.snap.fadeFromIndex;
+  readonly snapToSequentialPoint = this.snap.snapToSequentialPoint;
+  readonly activeSnapPointIndex = this.snap.activeSnapPointIndex;
 
-  readonly drawerTransform$ = combineLatest([this.drawerRefObs$, this.isDraggingObs$]).pipe(
-    map(([drawer, isDragging]) => {
-      if (!drawer) return null;
-      const offset = isDragging ? this.drag.calculateDragDelta() : 0;
-      const direction = this.state.direction$.value;
-      return isVertical(direction) ? `translateY(${offset}px)` : `translateX(${offset}px)`;
-    }),
-  );
+  readonly drawerTransform = computed(() => {
+    const drawer = this.drawerRef();
+    if (!drawer) return null;
+    const isDragging = this.isDragging();
+    const offset = isDragging ? this.drag.calculateDragDelta() : 0;
+    const direction = this.state.direction();
+    return isVertical(direction) ? `translateY(${offset}px)` : `translateX(${offset}px)`;
+  });
 
   constructor() {
-    // Sync initial hide transform whenever the drawer element is registered
-    this.drawerRefObs$.pipe(takeUntil(this.destroy$)).subscribe((drawer) => {
-      if (!drawer || this.state.isOpen$.value) return;
-      const direction = this.state.direction$.value;
+    // Sync initial hide transform whenever the drawer element is first registered
+    effect(() => {
+      const drawer = this.drawerRef();
+      if (!drawer || untracked(() => this.state.isOpen())) return;
+      const direction = untracked(() => this.state.direction());
       const offset = this.dom.getTranslateBasedOnDirection({ drawer, direction });
       drawer.style.transform = isVertical(direction) ? `translateY(${offset}px)` : `translateX(${offset}px)`;
     });
 
     // Sync drawer position with open/close state changes
-    this.isOpen$.pipe(takeUntil(this.destroy$)).subscribe((isOpen) => {
-      const drawer = this.state.drawerRef$.value;
+    effect(() => {
+      const isOpen = this.isOpen();
+      const drawer = untracked(() => this.state.drawerRef());
       if (!drawer) return;
 
       if (!isOpen) {
-        const direction = this.state.direction$.value;
+        const direction = untracked(() => this.state.direction());
         const offset = this.dom.getTranslateBasedOnDirection({ drawer, direction });
         drawer.style.transform = isVertical(direction) ? `translateY(${offset}px)` : `translateX(${offset}px)`;
       } else {
-        const snapPoints = this.snap.snapPoints$.value;
+        const snapPoints = untracked(() => this.snap.snapPoints());
         if (snapPoints && snapPoints.length > 0) {
-          const activePoint = this.snap.activeSnapPoint$.value ?? snapPoints[0];
+          const activePoint = untracked(() => this.snap.activeSnapPoint()) ?? snapPoints[0];
           this.snap.snapToPoint(activePoint);
         }
       }
@@ -106,7 +104,7 @@ export class DrawerService implements OnDestroy {
 
   setDrawerRef(ref: HTMLDivElement | null): void {
     if (ref) {
-      const direction = this.state.direction$.value;
+      const direction = this.state.direction();
       const offset = this.dom.getTranslateBasedOnDirection({ drawer: ref, direction });
       ref.style.transform = isVertical(direction) ? `translateY(${offset}px)` : `translateX(${offset}px)`;
     }
@@ -137,27 +135,22 @@ export class DrawerService implements OnDestroy {
   setPreventScrollRestoration(value: boolean): void {
     this.state.setPreventScrollRestoration(value);
   }
+  setOpenTime(date: Date | null): void {
+    this.state.setOpenTime(date);
+  }
 
-  shouldScaleBackground(): boolean {
-    return this.state.getShouldScaleBackground();
+  // ── Snap delegates ────────────────────────────────────────────────────────
+  setSnapPoints(value: SnapPoint[] | null): void {
+    this.snap.setSnapPoints(value);
   }
-  setBackgroundColorOnScale(): boolean {
-    return this.state.getBackgroundColorOnScale();
+  setActiveSnapPoint(value: SnapPoint | null): void {
+    this.snap.setActiveSnapPoint(value);
   }
-  noBodyStyles(): boolean {
-    return this.state.getNoBodyStyles();
+  setFadeFromIndex(value: number | undefined): void {
+    this.snap.setFadeFromIndex(value);
   }
-  nested(): boolean {
-    return this.state.getNested();
-  }
-  modal(): boolean {
-    return this.state.getModal();
-  }
-  hasBeenOpened(): boolean {
-    return this.state.getHasBeenOpened();
-  }
-  preventScrollRestoration(): boolean {
-    return this.state.getPreventScrollRestoration();
+  setSnapToSequentialPoint(value: boolean): void {
+    this.snap.setSnapToSequentialPoint(value);
   }
 
   // ── Drag delegates ────────────────────────────────────────────────────────
@@ -209,7 +202,6 @@ export class DrawerService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+    // Effects clean up automatically; method kept for backward compatibility
   }
 }

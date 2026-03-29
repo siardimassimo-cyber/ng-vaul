@@ -1,111 +1,101 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Injectable, signal } from '@angular/core';
 import { DrawerDirection, DrawerDirectionType } from '../types';
 
 @Injectable({ providedIn: 'root' })
 export class DrawerStateService {
-  readonly stateChange$ = new BehaviorSubject<void>(undefined);
-  readonly isOpen$ = new BehaviorSubject<boolean>(false);
-  readonly isDragging$ = new BehaviorSubject<boolean>(false);
-  readonly drawerRef$ = new BehaviorSubject<HTMLDivElement | null>(null);
-  readonly overlayRef$ = new BehaviorSubject<HTMLElement | null>(null);
-  readonly direction$ = new BehaviorSubject<DrawerDirectionType>(DrawerDirection.BOTTOM);
-  readonly hasBeenOpened$ = new BehaviorSubject<boolean>(false);
-  readonly openTime$ = new BehaviorSubject<Date | null>(null);
+  readonly stateChange = signal<void>(undefined);
+  readonly isOpen = signal<boolean>(false);
+  readonly isDragging = signal<boolean>(false);
+  readonly drawerRef = signal<HTMLDivElement | null>(null);
+  readonly overlayRef = signal<HTMLElement | null>(null);
+  readonly direction = signal<DrawerDirectionType>(DrawerDirection.BOTTOM);
+  readonly hasBeenOpened = signal<boolean>(false);
+  readonly openTime = signal<Date | null>(null);
 
-  readonly shouldScaleBackground$ = new BehaviorSubject<boolean>(false);
-  readonly setBackgroundColorOnScale$ = new BehaviorSubject<boolean>(false);
-  readonly noBodyStyles$ = new BehaviorSubject<boolean>(false);
-  readonly nested$ = new BehaviorSubject<boolean>(false);
-  readonly modal$ = new BehaviorSubject<boolean>(false);
-  readonly preventScrollRestoration$ = new BehaviorSubject<boolean>(false);
+  readonly shouldScaleBackground = signal<boolean>(false);
+  readonly backgroundColorOnScale = signal<boolean>(false);
+  readonly noBodyStyles = signal<boolean>(false);
+  readonly nested = signal<boolean>(false);
+  readonly modal = signal<boolean>(false);
+  readonly preventScrollRestoration = signal<boolean>(false);
 
   setIsOpen(isOpen: boolean): void {
-    if (isOpen === this.isOpen$.value) return;
-    this.isOpen$.next(isOpen);
-    if (isOpen) this.hasBeenOpened$.next(true);
+    if (isOpen === this.isOpen()) return;
+    this.isOpen.set(isOpen);
+    if (isOpen) this.hasBeenOpened.set(true);
   }
 
   setIsDragging(isDragging: boolean): void {
-    this.isDragging$.next(isDragging);
+    this.isDragging.set(isDragging);
   }
 
   setDirection(direction: DrawerDirectionType): void {
-    this.direction$.next(direction);
+    this.direction.set(direction);
   }
 
   setDrawerRef(ref: HTMLDivElement | null): void {
-    this.drawerRef$.next(ref);
+    this.drawerRef.set(ref);
   }
 
   setOverlayRef(ref: HTMLElement | null): void {
-    this.overlayRef$.next(ref);
+    this.overlayRef.set(ref);
   }
 
   setScaleBackground(value: boolean): void {
-    this.shouldScaleBackground$.next(value);
+    this.shouldScaleBackground.set(value);
   }
 
   setBackgroundColor(value: boolean): void {
-    this.setBackgroundColorOnScale$.next(value);
+    this.backgroundColorOnScale.set(value);
   }
 
   setNoBodyStyles(value: boolean): void {
-    this.noBodyStyles$.next(value);
+    this.noBodyStyles.set(value);
   }
 
   setNested(value: boolean): void {
-    this.nested$.next(value);
+    this.nested.set(value);
   }
 
   setModal(value: boolean): void {
-    this.modal$.next(value);
+    this.modal.set(value);
   }
 
   setHasBeenOpened(value: boolean): void {
-    this.hasBeenOpened$.next(value);
+    this.hasBeenOpened.set(value);
   }
 
   setPreventScrollRestoration(value: boolean): void {
-    this.preventScrollRestoration$.next(value);
+    this.preventScrollRestoration.set(value);
+  }
+
+  setOpenTime(date: Date | null): void {
+    this.openTime.set(date);
   }
 
   getShouldScaleBackground(): boolean {
-    return this.shouldScaleBackground$.value;
+    return this.shouldScaleBackground();
   }
   getBackgroundColorOnScale(): boolean {
-    return this.setBackgroundColorOnScale$.value;
+    return this.backgroundColorOnScale();
   }
   getNoBodyStyles(): boolean {
-    return this.noBodyStyles$.value;
+    return this.noBodyStyles();
   }
   getNested(): boolean {
-    return this.nested$.value;
+    return this.nested();
   }
   getModal(): boolean {
-    return this.modal$.value;
+    return this.modal();
   }
   getHasBeenOpened(): boolean {
-    return this.hasBeenOpened$.value;
+    return this.hasBeenOpened();
   }
   getPreventScrollRestoration(): boolean {
-    return this.preventScrollRestoration$.value;
+    return this.preventScrollRestoration();
   }
 
   ngOnDestroy(): void {
-    this.stateChange$.complete();
-    this.isOpen$.complete();
-    this.isDragging$.complete();
-    this.drawerRef$.complete();
-    this.overlayRef$.complete();
-    this.direction$.complete();
-    this.hasBeenOpened$.complete();
-    this.openTime$.complete();
-    this.shouldScaleBackground$.complete();
-    this.setBackgroundColorOnScale$.complete();
-    this.noBodyStyles$.complete();
-    this.nested$.complete();
-    this.modal$.complete();
-    this.preventScrollRestoration$.complete();
+    // Signals clean up automatically; method kept for backward compatibility
   }
 }

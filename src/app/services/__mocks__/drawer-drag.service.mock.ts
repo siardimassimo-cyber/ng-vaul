@@ -1,40 +1,28 @@
-import { BehaviorSubject, Observable } from 'rxjs';
+import { signal } from '@angular/core';
 import { DrawerDirectionType } from '../../types';
 
 export const createDrawerDragMock = () => ({
-  pointerStart$: new BehaviorSubject<{ x: number; y: number } | null>(null),
-  dragStartPosition$: new BehaviorSubject<{ x: number; y: number } | null>(null),
-  currentPointerPositionObs$: new Observable(),
-  wasBeyondThePoint$: new BehaviorSubject<boolean | null>(null),
-  dragEndTime$: new BehaviorSubject<Date | null>(null),
-  dragStartTime$: new BehaviorSubject<Date | null>(null),
-  isAllowedToDrag$: new BehaviorSubject<boolean>(false),
+  pointerStart: signal<{ x: number; y: number } | null>(null),
+  dragStartPosition: signal<{ x: number; y: number } | null>(null),
+  currentPointerPosition: signal<{ x: number; y: number } | null>(null),
+  wasBeyondThePoint: signal<boolean | null>(null),
+  dragEndTime: signal<Date | null>(null),
+  dragStartTime: signal<Date | null>(null),
+  isAllowedToDrag: signal<boolean>(false),
 
   calculateDragDelta: (): number => 0,
 
-  onPress: (event: PointerEvent, element?: HTMLDivElement): void => {
-    // implementation
-  },
+  onPress: (event: PointerEvent, element?: HTMLDivElement): void => {},
 
-  onDrag: (event: DragEvent | PointerEvent, element?: HTMLDivElement, dismissible?: boolean): void => {
-    // implementation
-  },
+  onDrag: (event: DragEvent | PointerEvent, element?: HTMLDivElement, dismissible?: boolean): void => {},
 
-  onRelease: (event: PointerEvent | null, direction: DrawerDirectionType, element?: HTMLDivElement): void => {
-    // implementation
-  },
+  onRelease: (event: PointerEvent | null, direction: DrawerDirectionType, element?: HTMLDivElement): void => {},
 
   shouldDrag: (el: EventTarget, isDraggingInDirection: boolean): boolean => false,
 
-  resetDrawer: (direction: DrawerDirectionType, element?: HTMLDivElement): void => {
-    // implementation
-  },
+  resetDrawer: (direction: DrawerDirectionType, element?: HTMLDivElement): void => {},
 
-  closeDrawer: (drawer: HTMLDivElement): void => {
-    // implementation
-  },
+  closeDrawer: (drawer: HTMLDivElement): void => {},
 
-  ngOnDestroy: (): void => {
-    // implementation
-  },
+  ngOnDestroy: (): void => {},
 });

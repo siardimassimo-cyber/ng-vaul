@@ -6,7 +6,6 @@ import { ControlCenterComponent } from './control-center.component';
 import { DrawerService } from './services/drawer.service';
 import { DrawerDirection, DrawerDirectionType, SnapPoint } from './types';
 import { isVertical } from './utils/helpers';
-import { toSignal } from '@angular/core/rxjs-interop';
 @Component({
   selector: 'app-root',
   imports: [DrawerComponent, OverlayComponent, ControlCenterComponent],
@@ -156,7 +155,7 @@ export class AppComponent implements OnInit {
   public snapPoints = signal<SnapPoint[]>([0.4, 0.8, 1]);
   /** When true, overlay click and Escape close the drawer. */
   public dismissible = signal(true);
-  public isOpen = toSignal(this.drawerService.isOpen$);
+  public isOpen = this.drawerService.isOpen;
   public isVertical = isVertical;
   public readonly DrawerDirection = DrawerDirection;
 

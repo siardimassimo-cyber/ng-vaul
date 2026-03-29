@@ -1,4 +1,4 @@
-import { BehaviorSubject, Observable } from 'rxjs';
+import { computed, signal } from '@angular/core';
 import { vi } from 'vitest';
 import { DrawerDirection, DrawerDirectionType, SnapPoint } from '../../types';
 
@@ -40,73 +40,79 @@ export const setupDrawerDOM = () => {
 };
 
 export const createDrawerStateServiceMock = () => {
-  const isOpen$ = new BehaviorSubject<boolean>(false);
-  const isDragging$ = new BehaviorSubject<boolean>(false);
-  const drawerRef$ = new BehaviorSubject<HTMLDivElement | null>(null);
-  const overlayRef$ = new BehaviorSubject<HTMLElement | null>(null);
-  const direction$ = new BehaviorSubject<DrawerDirectionType>(DrawerDirection.BOTTOM);
-  const openTime$ = new BehaviorSubject<Date | null>(null);
-  const shouldScaleBackground$ = new BehaviorSubject<boolean>(false);
-  const setBackgroundColorOnScale$ = new BehaviorSubject<boolean>(false);
-  const noBodyStyles$ = new BehaviorSubject<boolean>(false);
-  const nested$ = new BehaviorSubject<boolean>(false);
-  const modal$ = new BehaviorSubject<boolean>(false);
-  const preventScrollRestoration$ = new BehaviorSubject<boolean>(false);
-  const hasBeenOpened$ = new BehaviorSubject<boolean>(false);
-  const stateChange$ = new BehaviorSubject<void>(undefined);
+  const isOpen = signal<boolean>(false);
+  const isDragging = signal<boolean>(false);
+  const drawerRef = signal<HTMLDivElement | null>(null);
+  const overlayRef = signal<HTMLElement | null>(null);
+  const direction = signal<DrawerDirectionType>(DrawerDirection.BOTTOM);
+  const openTime = signal<Date | null>(null);
+  const shouldScaleBackground = signal<boolean>(false);
+  const backgroundColorOnScale = signal<boolean>(false);
+  const noBodyStyles = signal<boolean>(false);
+  const nested = signal<boolean>(false);
+  const modal = signal<boolean>(false);
+  const preventScrollRestoration = signal<boolean>(false);
+  const hasBeenOpened = signal<boolean>(false);
+  const stateChange = signal<void>(undefined);
 
   return {
-    stateChange$,
-    isOpen$,
-    isDragging$,
-    drawerRef$,
-    overlayRef$,
-    direction$,
-    openTime$,
-    shouldScaleBackground$,
-    setBackgroundColorOnScale$,
-    noBodyStyles$,
-    nested$,
-    modal$,
-    preventScrollRestoration$,
-    hasBeenOpened$,
+    stateChange,
+    isOpen,
+    isDragging,
+    drawerRef,
+    overlayRef,
+    direction,
+    openTime,
+    shouldScaleBackground,
+    backgroundColorOnScale,
+    noBodyStyles,
+    nested,
+    modal,
+    preventScrollRestoration,
+    hasBeenOpened,
     setIsOpen: vi.fn((v: boolean) => {
-      if (v !== isOpen$.value) {
-        isOpen$.next(v);
-        if (v) hasBeenOpened$.next(true);
+      if (v !== isOpen()) {
+        isOpen.set(v);
+        if (v) hasBeenOpened.set(true);
       }
     }),
-    setIsDragging: vi.fn((v: boolean) => isDragging$.next(v)),
-    setDirection: vi.fn((v: DrawerDirectionType) => direction$.next(v)),
-    setDrawerRef: vi.fn((v: HTMLDivElement | null) => drawerRef$.next(v)),
-    setOverlayRef: vi.fn((v: HTMLElement | null) => overlayRef$.next(v)),
-    setScaleBackground: vi.fn((v: boolean) => shouldScaleBackground$.next(v)),
-    setBackgroundColor: vi.fn((v: boolean) => setBackgroundColorOnScale$.next(v)),
-    setNoBodyStyles: vi.fn((v: boolean) => noBodyStyles$.next(v)),
-    setNested: vi.fn((v: boolean) => nested$.next(v)),
-    setModal: vi.fn((v: boolean) => modal$.next(v)),
-    setHasBeenOpened: vi.fn((v: boolean) => hasBeenOpened$.next(v)),
-    setPreventScrollRestoration: vi.fn((v: boolean) => preventScrollRestoration$.next(v)),
-    getShouldScaleBackground: vi.fn(() => shouldScaleBackground$.value),
-    getBackgroundColorOnScale: vi.fn(() => setBackgroundColorOnScale$.value),
-    getNoBodyStyles: vi.fn(() => noBodyStyles$.value),
-    getNested: vi.fn(() => nested$.value),
-    getModal: vi.fn(() => modal$.value),
-    getHasBeenOpened: vi.fn(() => hasBeenOpened$.value),
-    getPreventScrollRestoration: vi.fn(() => preventScrollRestoration$.value),
+    setIsDragging: vi.fn((v: boolean) => isDragging.set(v)),
+    setDirection: vi.fn((v: DrawerDirectionType) => direction.set(v)),
+    setDrawerRef: vi.fn((v: HTMLDivElement | null) => drawerRef.set(v)),
+    setOverlayRef: vi.fn((v: HTMLElement | null) => overlayRef.set(v)),
+    setScaleBackground: vi.fn((v: boolean) => shouldScaleBackground.set(v)),
+    setBackgroundColor: vi.fn((v: boolean) => backgroundColorOnScale.set(v)),
+    setNoBodyStyles: vi.fn((v: boolean) => noBodyStyles.set(v)),
+    setNested: vi.fn((v: boolean) => nested.set(v)),
+    setModal: vi.fn((v: boolean) => modal.set(v)),
+    setHasBeenOpened: vi.fn((v: boolean) => hasBeenOpened.set(v)),
+    setPreventScrollRestoration: vi.fn((v: boolean) => preventScrollRestoration.set(v)),
+    setOpenTime: vi.fn((v: Date | null) => openTime.set(v)),
+    getShouldScaleBackground: vi.fn(() => shouldScaleBackground()),
+    getBackgroundColorOnScale: vi.fn(() => backgroundColorOnScale()),
+    getNoBodyStyles: vi.fn(() => noBodyStyles()),
+    getNested: vi.fn(() => nested()),
+    getModal: vi.fn(() => modal()),
+    getHasBeenOpened: vi.fn(() => hasBeenOpened()),
+    getPreventScrollRestoration: vi.fn(() => preventScrollRestoration()),
   };
 };
 
 export const createDrawerSnapServiceMock = () => {
-  const snapPoints$ = new BehaviorSubject<SnapPoint[] | null>(null);
-  const activeSnapPoint$ = new BehaviorSubject<SnapPoint | null>(null);
+  const snapPoints = signal<SnapPoint[] | null>(null);
+  const activeSnapPoint = signal<SnapPoint | null>(null);
 
   return {
-    snapPoints$,
-    activeSnapPoint$,
-    fadeFromIndex$: new BehaviorSubject<number | undefined>(undefined),
-    snapToSequentialPoint$: new BehaviorSubject<boolean>(false),
-    activeSnapPointIndex$: new Observable<number | null>(),
+    snapPoints,
+    activeSnapPoint,
+    fadeFromIndex: signal<number | undefined>(undefined),
+    snapToSequentialPoint: signal<boolean>(false),
+    activeSnapPointIndex: computed(() => {
+      const sp = snapPoints();
+      const asp = activeSnapPoint();
+      if (!sp || asp === null) return null;
+      return sp.indexOf(asp);
+    }),
     getSnapPointsOffset: vi.fn((): number[] => []),
     snapToPoint: vi.fn(),
     goToAdjacentSnap: vi.fn(),
@@ -121,21 +127,22 @@ export const createDrawerDomServiceMock = () => ({
 });
 
 export const createDrawerDragServiceMock = () => {
-  const pointerStart$ = new BehaviorSubject<{ x: number; y: number } | null>(null);
-  const dragStartPosition$ = new BehaviorSubject<{ x: number; y: number } | null>(null);
-  const wasBeyondThePoint$ = new BehaviorSubject<boolean | null>(null);
-  const dragEndTime$ = new BehaviorSubject<Date | null>(null);
-  const dragStartTime$ = new BehaviorSubject<Date | null>(null);
-  const isAllowedToDrag$ = new BehaviorSubject<boolean>(false);
+  const pointerStart = signal<{ x: number; y: number } | null>(null);
+  const dragStartPosition = signal<{ x: number; y: number } | null>(null);
+  const currentPointerPosition = signal<{ x: number; y: number } | null>(null);
+  const wasBeyondThePoint = signal<boolean | null>(null);
+  const dragEndTime = signal<Date | null>(null);
+  const dragStartTime = signal<Date | null>(null);
+  const isAllowedToDrag = signal<boolean>(false);
 
   return {
-    pointerStart$,
-    dragStartPosition$,
-    currentPointerPositionObs$: new Observable<{ x: number; y: number } | null>(),
-    wasBeyondThePoint$,
-    dragEndTime$,
-    dragStartTime$,
-    isAllowedToDrag$,
+    pointerStart,
+    dragStartPosition,
+    currentPointerPosition,
+    wasBeyondThePoint,
+    dragEndTime,
+    dragStartTime,
+    isAllowedToDrag,
     calculateDragDelta: vi.fn((): number => 0),
     onPress: vi.fn(),
     onDrag: vi.fn(),

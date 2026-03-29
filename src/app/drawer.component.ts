@@ -1,4 +1,3 @@
-import { AsyncPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -14,8 +13,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { combineLatest, distinctUntilChanged, noop } from 'rxjs';
+import { noop } from 'rxjs';
 import { HandleComponent } from './handle.component';
 import { isIOS, isMobileFirefox } from './services/browser';
 import { BORDER_RADIUS, DRAG_CLASS, TRANSITIONS, WINDOW_TOP_OFFSET } from './services/constants';
@@ -39,9 +37,9 @@ import { assignStyle, chain, isInput, isVertical, set } from './utils/helpers';
       role="dialog"
       aria-label="Drawer panel"
       aria-modal="true"
-      [attr.aria-hidden]="(isOpen$ | async) ? null : 'true'"
+      [attr.aria-hidden]="drawerService.isOpen() ? null : 'true'"
       [attr.data-vaul-drawer-direction]="direction()"
-      [attr.data-state]="(isOpen$ | async) ? 'open' : 'closed'"
+      [attr.data-state]="drawerService.isOpen() ? 'open' : 'closed'"
       [style.height]="isVertical(direction()) ? initialDrawerHeightorWidth() + 'px' : '100%'"
       [style.width]="isVertical(direction()) ? '100vw' : this.initialDrawerHeightorWidth() + 'px'"
       [style.bottom]="isVertical(direction()) ? '0' : 'auto'"
@@ -94,11 +92,11 @@ import { assignStyle, chain, isInput, isVertical, set } from './utils/helpers';
       }
     `,
   ],
-  imports: [AsyncPipe, HandleComponent],
+  imports: [HandleComponent],
 })
 export class DrawerComponent implements OnDestroy {
   public fixed = input(true);
-  private readonly drawerService = inject(DrawerService);
+  readonly drawerService = inject(DrawerService);
   private readonly scaleBackgroundService = inject(ScaleBackgroundService);
   private readonly preventScrollService = inject(PreventScrollService);
   private readonly destroyRef$ = inject(DestroyRef);
@@ -128,10 +126,8 @@ export class DrawerComponent implements OnDestroy {
   public isVertical = isVertical;
   public DrawerDirection = DrawerDirection;
 
-  isOpen$ = this.drawerService.isOpen$;
-
   constructor() {
-    this.drawerService.openTime$.next(new Date());
+    this.drawerService.setOpenTime(new Date());
 
     effect(() => {
       this.drawerService.setIsOpen(this.open());
@@ -143,84 +139,85 @@ export class DrawerComponent implements OnDestroy {
       this.drawerService.setModal(this.modal());
       this.drawerService.setNested(this.nested());
 
-      this.drawerService.snapPoints$.next(this.snapPoints());
-      this.drawerService.activeSnapPoint$.next(this.activeSnapPoint());
-      this.drawerService.fadeFromIndex$.next(this.fadeFromIndex());
-      this.drawerService.snapToSequentialPoint$.next(this.snapToSequentialPoint());
+      this.drawerService.setSnapPoints(this.snapPoints());
+      this.drawerService.setActiveSnapPoint(this.activeSnapPoint());
+      this.drawerService.setFadeFromIndex(this.fadeFromIndex());
+      this.drawerService.setSnapToSequentialPoint(this.snapToSequentialPoint());
     });
 
-    this.drawerService.activeSnapPoint$.pipe(takeUntilDestroyed()).subscribe((point) => {
-      this.activeSnapPointChange.emit(point);
+    // Emit activeSnapPointChange whenever the active snap point changes
+    effect(() => {
+      this.activeSnapPointChange.emit(this.drawerService.activeSnapPoint());
     });
-    afterNextRender(() => {
-      // Setup visual viewport handling
-      this.setupVisualViewport();
-      combineLatest({
-        isOpen: this.isOpen$,
-        shouldScale: this.drawerService.shouldScaleBackground$,
-        direction: this.drawerService.direction$.pipe(distinctUntilChanged()),
-        setBackgroundColor: this.drawerService.setBackgroundColorOnScale$,
-        noBodyStyles: this.drawerService.noBodyStyles$,
-      })
-        .pipe(takeUntilDestroyed(this.destroyRef$))
-        .subscribe((state) => {
-          const drawerRef = this.drawerRef();
-          if (drawerRef?.nativeElement && this.cacheDirection !== this.direction()) {
-            this.cacheDirection = this.direction();
-            this.drawerService.setDrawerRef(drawerRef.nativeElement || null);
-            const offset = this.drawerService.getTranslateBasedOnDirection({
-              drawer: drawerRef.nativeElement,
-              direction: this.direction(),
-            });
-            const transform = isVertical(this.direction()) ? `translateY(${offset}px)` : `translateX(${offset}px)`;
-            set(drawerRef.nativeElement, {
-              transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(',')})`,
-              transform,
-            });
-          }
-          this.openChange.emit(state.isOpen);
-          if (state.isOpen && state.shouldScale) {
-            if (this.scaleBackgroundService.timeoutId) {
-              clearTimeout(this.scaleBackgroundService.timeoutId);
-            }
-            const wrapper =
-              (document.querySelector('[data-vaul-drawer-wrapper]') as HTMLElement) ||
-              (document.querySelector('[vaul-drawer-wrapper]') as HTMLElement);
 
-            if (!wrapper) return;
-            chain(
-              state.setBackgroundColor && !state.noBodyStyles
-                ? assignStyle(document.body, { background: 'black' })
-                : noop,
-              assignStyle(wrapper, {
-                transformOrigin: isVertical(this.direction()) ? 'top' : 'left',
-                transitionProperty: 'transform, border-radius',
-                transitionDuration: `${TRANSITIONS.DURATION}s`,
-                transitionTimingFunction: `cubic-bezier(${TRANSITIONS.EASE.join(',')})`,
-              }),
-            );
+    // React to state changes that affect the drawer DOM and background scaling
+    effect((onCleanup) => {
+      const isOpen = this.drawerService.isOpen();
+      const shouldScale = this.drawerService.shouldScaleBackground();
+      const direction = this.drawerService.direction();
+      const setBackgroundColor = this.drawerService.backgroundColorOnScale();
+      const noBodyStyles = this.drawerService.noBodyStyles();
 
-            const wrapperStylesCleanup = assignStyle(wrapper, {
-              borderRadius: `${BORDER_RADIUS}px`,
-              overflow: 'hidden',
-              transform: `scale(${this.drawerService.getScale()}) translate3d(0, calc(env(safe-area-inset-top) + 14px), 0)`,
-            });
-
-            // Cleanup function
-            return () => {
-              wrapperStylesCleanup();
-              this.scaleBackgroundService.timeoutId = window.setTimeout(() => {
-                const initialBg = this.scaleBackgroundService.initialBackgroundColor.value;
-                if (initialBg) {
-                  document.body.style.background = initialBg;
-                } else {
-                  document.body.style.removeProperty('background');
-                }
-              }, TRANSITIONS.DURATION * 1000);
-            };
-          }
-          return null;
+      const drawerRef = this.drawerRef();
+      if (drawerRef?.nativeElement && this.cacheDirection !== direction) {
+        this.cacheDirection = direction;
+        this.drawerService.setDrawerRef(drawerRef.nativeElement);
+        const offset = this.drawerService.getTranslateBasedOnDirection({
+          drawer: drawerRef.nativeElement,
+          direction,
         });
+        const transform = isVertical(direction) ? `translateY(${offset}px)` : `translateX(${offset}px)`;
+        set(drawerRef.nativeElement, {
+          transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(',')})`,
+          transform,
+        });
+      }
+
+      this.openChange.emit(isOpen);
+
+      if (isOpen && shouldScale) {
+        if (this.scaleBackgroundService.timeoutId) {
+          clearTimeout(this.scaleBackgroundService.timeoutId);
+        }
+        const wrapper =
+          (document.querySelector('[data-vaul-drawer-wrapper]') as HTMLElement) ||
+          (document.querySelector('[vaul-drawer-wrapper]') as HTMLElement);
+
+        if (!wrapper) return;
+        chain(
+          setBackgroundColor && !noBodyStyles
+            ? assignStyle(document.body, { background: 'black' })
+            : noop,
+          assignStyle(wrapper, {
+            transformOrigin: isVertical(direction) ? 'top' : 'left',
+            transitionProperty: 'transform, border-radius',
+            transitionDuration: `${TRANSITIONS.DURATION}s`,
+            transitionTimingFunction: `cubic-bezier(${TRANSITIONS.EASE.join(',')})`,
+          }),
+        );
+
+        const wrapperStylesCleanup = assignStyle(wrapper, {
+          borderRadius: `${BORDER_RADIUS}px`,
+          overflow: 'hidden',
+          transform: `scale(${this.drawerService.getScale()}) translate3d(0, calc(env(safe-area-inset-top) + 14px), 0)`,
+        });
+
+        onCleanup(() => {
+          wrapperStylesCleanup();
+          this.scaleBackgroundService.timeoutId = window.setTimeout(() => {
+            const initialBg = this.scaleBackgroundService.initialBackgroundColor();
+            if (initialBg) {
+              document.body.style.background = initialBg;
+            } else {
+              document.body.style.removeProperty('background');
+            }
+          }, TRANSITIONS.DURATION * 1000);
+        });
+      }
+    });
+
+    afterNextRender(() => {
+      this.setupVisualViewport();
       let preventScrollCount = 0;
       preventScrollCount++;
       if (preventScrollCount === 1) {
@@ -228,7 +225,6 @@ export class DrawerComponent implements OnDestroy {
           this.preventScrollService.preventScrollMobileSafari();
         }
       }
-      if (!this.drawerRef()) return;
     });
   }
 
@@ -239,10 +235,8 @@ export class DrawerComponent implements OnDestroy {
     if (isInput(focusedElement) || this.keyboardIsOpen()) {
       const visualViewportHeight = window.visualViewport?.height || 0;
       const totalHeight = window.innerHeight;
-      // This is the height of the keyboard
       let diffFromInitial = totalHeight - visualViewportHeight;
       const drawerHeight = drawer.getBoundingClientRect().height || 0;
-      // Adjust drawer height only if it's tall enough
       const isTallEnough = drawerHeight > totalHeight * 0.8;
 
       if (!this.initialDrawerHeightorWidth()) {
@@ -250,12 +244,10 @@ export class DrawerComponent implements OnDestroy {
       }
       const offsetFromTop = drawer.getBoundingClientRect().top;
 
-      // visualViewport height may change due to somq e subtle changes to the keyboard. Checking if the height changed by 60 or more will make sure that they keyboard really changed its open state.
       if (Math.abs(this.previousDiffFromInitial() - diffFromInitial) > 60) {
         this.keyboardIsOpen.set(!this.keyboardIsOpen());
       }
       this.previousDiffFromInitial.set(diffFromInitial);
-      // We don't have to change the height if the input is in view, when we are here we are in the opened keyboard state so we can correctly check if the input is in view
       if (drawerHeight > visualViewportHeight || this.keyboardIsOpen()) {
         const height = drawer.getBoundingClientRect().height;
         let newDrawerHeight = height;
@@ -263,14 +255,12 @@ export class DrawerComponent implements OnDestroy {
           if (height > visualViewportHeight) {
             newDrawerHeight = visualViewportHeight - (isTallEnough ? offsetFromTop : WINDOW_TOP_OFFSET);
           }
-          // When fixed, don't move the drawer upwards if there's space, but rather only change it's height so it's fully scrollable when the keyboard is open
           if (this.fixed()) {
             drawer.style.height = `${height - Math.max(diffFromInitial, 0)}px`;
           } else {
             drawer.style.height = `${Math.max(newDrawerHeight, visualViewportHeight - offsetFromTop)}px`;
           }
         } else {
-          // When fixed, don't move the drawer upwards if there's space, but rather only change it's height so it's fully scrollable when the keyboard is open
           if (this.fixed()) {
             drawer.style.height = `${height - Math.max(diffFromInitial, 0)}px`;
           } else {
@@ -284,7 +274,6 @@ export class DrawerComponent implements OnDestroy {
       if (!this.keyboardIsOpen()) {
         drawer.style.bottom = `0px`;
       } else {
-        // Negative bottom value would never make sense
         drawer.style.bottom = `${Math.max(diffFromInitial, 0)}px`;
       }
     }
@@ -303,7 +292,7 @@ export class DrawerComponent implements OnDestroy {
   }
 
   onGlobalPointerUp(event: PointerEvent) {
-    if (this.drawerService.isDragging$.value) {
+    if (this.drawerService.isDragging()) {
       const drawerRef = this.drawerRef()?.nativeElement;
       if (drawerRef) {
         this.onPointerUp(event, drawerRef);
@@ -312,7 +301,7 @@ export class DrawerComponent implements OnDestroy {
   }
 
   onGlobalPointerMove(event: PointerEvent) {
-    if (this.drawerService.isDragging$.value) {
+    if (this.drawerService.isDragging()) {
       const drawerRef = this.drawerRef()?.nativeElement;
       if (drawerRef) {
         this.onPointerMove(event, drawerRef);
@@ -322,7 +311,7 @@ export class DrawerComponent implements OnDestroy {
 
   onPointerDown(event: PointerEvent, element: HTMLDivElement) {
     element.setPointerCapture(event.pointerId);
-    this.drawerService.pointerStart$.next({
+    this.drawerService.pointerStart.set({
       x: event.clientX,
       y: event.clientY,
     });
@@ -331,15 +320,15 @@ export class DrawerComponent implements OnDestroy {
 
   onPointerUp(event: PointerEvent, element: HTMLDivElement) {
     element.releasePointerCapture(event.pointerId);
-    this.drawerService.pointerStart$.next(null);
-    this.drawerService.wasBeyondThePoint$.next(false);
+    this.drawerService.pointerStart.set(null);
+    this.drawerService.wasBeyondThePoint.set(false);
     this.onRelease(event, element, this.direction());
   }
 
   onPointerMove(event: PointerEvent, element: HTMLDivElement) {
-    if (!this.drawerService.pointerStart$.value) return;
-    const yPosition = event.clientY - (this.drawerService.pointerStart$?.value?.y ?? 0);
-    const xPosition = event.clientX - (this.drawerService.pointerStart$?.value?.x ?? 0);
+    if (!this.drawerService.pointerStart()) return;
+    const yPosition = event.clientY - (this.drawerService.pointerStart()?.y ?? 0);
+    const xPosition = event.clientX - (this.drawerService.pointerStart()?.x ?? 0);
 
     const swipeStartThreshold: number = event.pointerType === 'touch' ? 10 : 2;
     const delta = { x: xPosition, y: yPosition };
@@ -353,17 +342,17 @@ export class DrawerComponent implements OnDestroy {
 
     const isAllowedToSwipe = this.isDeltaInDirection(delta, direction, swipeStartThreshold);
     if (isAllowedToSwipe) {
-      if (!this.drawerService.isDragging$.value) {
+      if (!this.drawerService.isDragging()) {
         this.drawerService.setIsDragging(true);
       }
       this.onDrag(event, element);
     } else if (Math.abs(isVertical(this.direction()) ? yPosition : xPosition) > swipeStartThreshold) {
-      this.drawerService.pointerStart$.next(null);
+      this.drawerService.pointerStart.set(null);
     }
   }
 
   private isDeltaInDirection(delta: { x: number; y: number }, direction: string, threshold = 0) {
-    if (this.drawerService.wasBeyondThePoint$.value) return true;
+    if (this.drawerService.wasBeyondThePoint()) return true;
 
     const isHorizontal = ['left', 'right'].includes(direction);
     const deltaValue = isHorizontal ? Math.abs(delta.x) : Math.abs(delta.y);
@@ -375,7 +364,7 @@ export class DrawerComponent implements OnDestroy {
       return false;
     }
 
-    this.drawerService.wasBeyondThePoint$.next(true);
+    this.drawerService.wasBeyondThePoint.set(true);
     return true;
   }
 
@@ -388,11 +377,11 @@ export class DrawerComponent implements OnDestroy {
   }
 
   cancelDrag(element?: HTMLDivElement) {
-    if (!this.drawerService.isDragging$.value || !element) return;
+    if (!this.drawerService.isDragging() || !element) return;
     element.classList.remove(DRAG_CLASS);
-    this.drawerService.isAllowedToDrag$.next(false);
-    this.drawerService.isDragging$.next(false);
-    this.drawerService.dragEndTime$.next(new Date());
+    this.drawerService.isAllowedToDrag.set(false);
+    this.drawerService.setIsDragging(false);
+    this.drawerService.dragEndTime.set(new Date());
   }
 
   onRelease(event: PointerEvent, element: HTMLDivElement, direction: DrawerDirectionType) {
