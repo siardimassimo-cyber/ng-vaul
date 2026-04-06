@@ -16,10 +16,6 @@ describe('DrawerStateService', () => {
     service = TestBed.inject(DrawerStateService);
   });
 
-  afterEach(() => {
-    service.ngOnDestroy();
-  });
-
   describe('Initial State', () => {
     it('should be created', () => {
       expect(service).toBeTruthy();
@@ -287,12 +283,4 @@ describe('DrawerStateService', () => {
     });
   });
 
-  describe('Lifecycle and Cleanup', () => {
-    it('should allow cleanup to be called multiple times safely', () => {
-      expect(() => {
-        service.ngOnDestroy();
-        service.ngOnDestroy();
-      }).not.toThrow();
-    });
-  });
 });

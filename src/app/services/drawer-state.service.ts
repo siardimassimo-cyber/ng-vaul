@@ -95,7 +95,4 @@ export class DrawerStateService {
     return this.preventScrollRestoration();
   }
 
-  ngOnDestroy(): void {
-    // Signals clean up automatically; method kept for backward compatibility
-  }
 }

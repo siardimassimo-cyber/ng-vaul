@@ -9,9 +9,12 @@
     "test": "ng test",
     "lint": "oxlint && oxfmt",
     "lint:fix": "oxlint --fix",
-    "e2e": "playwright test",
-    "e2e:headed": "playwright test --headed",
-    "testsprite:local": "node testsprite_tests/run-all.mjs"
+    "e2e": "playwright test --project=chromium --project=firefox --project=webkit",
+    "e2e:headed": "playwright test --headed --project=chromium --project=firefox --project=webkit",
+    "e2e:ui": "playwright test --ui",
+    "e2e:debug": "playwright test --debug",
+    "e2e:visual": "playwright test --project=visual",
+    "e2e:visual:update": "playwright test --project=visual --update-snapshots"
   },
   "private": true,
   "dependencies": {

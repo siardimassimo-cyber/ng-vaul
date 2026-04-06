@@ -102,7 +102,4 @@ export class PositionFixedService {
     }
   }
 
-  ngOnDestroy() {
-    // Signals and effects clean up automatically; method kept for backward compatibility
-  }
 }

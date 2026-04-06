@@ -98,7 +98,4 @@ export class DrawerSnapService {
     this.snapToPoint(snapPoints[j]);
   }
 
-  ngOnDestroy(): void {
-    // Signals clean up automatically; method kept for backward compatibility
-  }
 }

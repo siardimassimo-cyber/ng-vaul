@@ -1,5 +1,5 @@
-import { AnyFunction } from '../types';
-import { DrawerDirectionType } from './../types';
+import { AnyFunction } from "../types";
+import { DrawerDirectionType } from "./../types";
 import { SnapPoint } from "../types";
 
 interface Style {
@@ -7,23 +7,29 @@ interface Style {
 }
 
 const cache = new WeakMap();
+
 const nonTextInputTypes = new Set([
-  'checkbox',
-  'radio',
-  'range',
-  'color',
-  'file',
-  'image',
-  'button',
-  'submit',
-  'reset',
+  "checkbox",
+  "radio",
+  "range",
+  "color",
+  "file",
+  "image",
+  "button",
+  "submit",
+  "reset",
 ]);
-export function set(el: Element | HTMLElement | null | undefined, styles: Style, ignoreCache = false) {
+
+export function set(
+  el: Element | HTMLElement | null | undefined,
+  styles: Style,
+  ignoreCache = false,
+) {
   if (!el || !(el instanceof HTMLElement)) return;
   let originalStyles: Style = {};
 
   Object.entries(styles).forEach(([key, value]: [string, string]) => {
-    if (key.startsWith('--')) {
+    if (key.startsWith("--")) {
       el.style.setProperty(key, value);
       return;
     }
@@ -37,45 +43,35 @@ export function set(el: Element | HTMLElement | null | undefined, styles: Style,
   cache.set(el, originalStyles);
 }
 
-export function reset(el: Element | HTMLElement | null, prop?: string) {
-  if (!el || !(el instanceof HTMLElement)) return;
-  let originalStyles = cache.get(el);
-
-  if (!originalStyles) {
-    return;
-  }
-
-  if (prop) {
-    (el.style as any)[prop] = originalStyles[prop];
-  } else {
-    Object.entries(originalStyles).forEach(([key, value]) => {
-      (el.style as any)[key] = value;
-    });
-  }
-}
-
-export function getTranslate(element: HTMLElement, direction: DrawerDirectionType): number | null {
+export function getTranslate(
+  element: HTMLElement,
+  direction: DrawerDirectionType,
+): number | null {
   if (!element) {
     return null;
   }
-  const style: CSSStyleDeclaration & { webkitTransform?: string; mozTransform?: string } = window.getComputedStyle(element);
+  const style: CSSStyleDeclaration & {
+    webkitTransform?: string;
+    mozTransform?: string;
+  } = window.getComputedStyle(element);
   const transform =
     style.transform || style.webkitTransform || style.mozTransform;
   let mat = transform?.match(/^matrix3d\((.+)\)$/);
   if (mat) {
     // https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix3d
-    return parseFloat(mat[1].split(', ')[isVertical(direction) ? 13 : 12]);
+    return parseFloat(mat[1].split(", ")[isVertical(direction) ? 13 : 12]);
   }
   // https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix
   mat = transform?.match(/^matrix\((.+)\)$/);
-  return mat ? parseFloat(mat[1].split(', ')[isVertical(direction) ? 5 : 4]) : null;
+  return mat
+    ? parseFloat(mat[1].split(", ")[isVertical(direction) ? 5 : 4])
+    : null;
 }
 
-export function dampenValue(v: number) {
-  return 8 * (Math.log(v + 1) - 2);
-}
-
-export function assignStyle(element: HTMLElement | null | undefined, style: Partial<CSSStyleDeclaration>) {
+export function assignStyle(
+  element: HTMLElement | null | undefined,
+  style: Partial<CSSStyleDeclaration>,
+) {
   if (!element) return () => {};
 
   const prevStyle = element.style.cssText;
@@ -92,7 +88,7 @@ export function assignStyle(element: HTMLElement | null | undefined, style: Part
 export function chain<T>(...fns: T[]) {
   return (...args: T extends AnyFunction ? Parameters<T> : never) => {
     for (const fn of fns) {
-      if (typeof fn === 'function') {
+      if (typeof fn === "function") {
         fn(...args);
       }
     }
@@ -101,14 +97,15 @@ export function chain<T>(...fns: T[]) {
 
 export function isInput(target: Element) {
   return (
-    (target instanceof HTMLInputElement && !nonTextInputTypes.has(target.type)) ||
+    (target instanceof HTMLInputElement &&
+      !nonTextInputTypes.has(target.type)) ||
     target instanceof HTMLTextAreaElement ||
     (target instanceof HTMLElement && target.isContentEditable)
   );
 }
 
 export function isVertical(direction: DrawerDirectionType) {
-  return direction === 'top' || direction === 'bottom' ? true : false;
+  return direction === "top" || direction === "bottom" ? true : false;
 }
 
 export function validateSnapPointGuard(value: unknown): value is SnapPoint {

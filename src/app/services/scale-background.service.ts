@@ -1,9 +1,9 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, OnDestroy, signal } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
 })
-export class ScaleBackgroundService {
+export class ScaleBackgroundService implements OnDestroy {
   public timeoutId: number | null = null;
   public readonly initialBackgroundColor = signal<string>(
     typeof document !== 'undefined' ? document.body.style.backgroundColor : '',

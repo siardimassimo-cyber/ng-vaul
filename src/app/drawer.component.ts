@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   afterNextRender,
   effect,
   ElementRef,
@@ -16,7 +15,7 @@ import {
 import { noop } from 'rxjs';
 import { HandleComponent } from './handle.component';
 import { isIOS, isMobileFirefox } from './services/browser';
-import { BORDER_RADIUS, DRAG_CLASS, TRANSITIONS, WINDOW_TOP_OFFSET } from './services/constants';
+import { BORDER_RADIUS, TRANSITIONS, WINDOW_TOP_OFFSET } from './services/constants';
 import { DrawerService } from './services/drawer.service';
 import { PreventScrollService } from './services/prevent-scroll.service';
 import { ScaleBackgroundService } from './services/scale-background.service';
@@ -99,7 +98,6 @@ export class DrawerComponent implements OnDestroy {
   readonly drawerService = inject(DrawerService);
   private readonly scaleBackgroundService = inject(ScaleBackgroundService);
   private readonly preventScrollService = inject(PreventScrollService);
-  private readonly destroyRef$ = inject(DestroyRef);
   readonly direction = input<DrawerDirectionType>(DrawerDirection.BOTTOM);
   readonly shouldScaleBackground = input(true);
   readonly modal = input(true);
@@ -374,14 +372,6 @@ export class DrawerComponent implements OnDestroy {
 
   onDrag(event: DragEvent | PointerEvent, element: HTMLDivElement) {
     this.drawerService.onDrag(event, element, this.dismissible());
-  }
-
-  cancelDrag(element?: HTMLDivElement) {
-    if (!this.drawerService.isDragging() || !element) return;
-    element.classList.remove(DRAG_CLASS);
-    this.drawerService.isAllowedToDrag.set(false);
-    this.drawerService.setIsDragging(false);
-    this.drawerService.dragEndTime.set(new Date());
   }
 
   onRelease(event: PointerEvent, element: HTMLDivElement, direction: DrawerDirectionType) {

@@ -34,10 +34,6 @@ describe('DrawerService (Facade)', () => {
   });
 
   afterEach(() => {
-    service.ngOnDestroy();
-    stateService.ngOnDestroy();
-    dragService.ngOnDestroy();
-    snapService.ngOnDestroy();
     domSetup.cleanup();
   });
 
@@ -331,13 +327,6 @@ describe('DrawerService (Facade)', () => {
       service.setDrawerRef(mockDrawer);
       TestBed.flushEffects();
       expect(service.drawerTransform()).toContain('translateX');
-    });
-  });
-
-  describe('Lifecycle', () => {
-    it('should not throw on destroy', () => {
-      expect(() => service.ngOnDestroy()).not.toThrow();
-      expect(() => service.ngOnDestroy()).not.toThrow();
     });
   });
 

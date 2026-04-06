@@ -201,7 +201,4 @@ export class DrawerService {
     return this.dom.getScale();
   }
 
-  ngOnDestroy(): void {
-    // Effects clean up automatically; method kept for backward compatibility
-  }
 }

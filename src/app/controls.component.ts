@@ -1,10 +1,16 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { DrawerDirectionType, SnapPoint } from './types';
-import { validateSnapPointGuard } from './utils/utils';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  input,
+  output,
+  signal,
+} from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { DrawerDirectionType, SnapPoint } from "./types";
+import { validateSnapPointGuard } from "./utils/helpers";
 
 @Component({
-  selector: 'app-controls',
+  selector: "app-controls",
   imports: [FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -36,15 +42,26 @@ import { validateSnapPointGuard } from './utils/utils';
           >
             Right
           </button>
-          <button type="button" id="direction-top-btn" [class.active]="direction() === 'top'" (click)="setDirection('top')">
+          <button
+            type="button"
+            id="direction-top-btn"
+            [class.active]="direction() === 'top'"
+            (click)="setDirection('top')"
+          >
             Top
           </button>
         </div>
       </div>
 
       <div class="control-section">
-        <span class="controls-label" id="dismissible-label">Dismissible overlay</span>
-        <div class="dismissible-segmented" role="group" aria-labelledby="dismissible-label">
+        <span class="controls-label" id="dismissible-label"
+          >Dismissible overlay</span
+        >
+        <div
+          class="dismissible-segmented"
+          role="group"
+          aria-labelledby="dismissible-label"
+        >
           <button
             type="button"
             id="dismissible-off-btn"
@@ -95,10 +112,18 @@ import { validateSnapPointGuard } from './utils/utils';
             [class.invalid]="error()"
             [attr.aria-describedby]="error() ? 'snap-input-error' : null"
           />
-          <button type="button" id="snap-point-add-btn" (click)="addSnapPoint()">Add</button>
+          <button
+            type="button"
+            id="snap-point-add-btn"
+            (click)="addSnapPoint()"
+          >
+            Add
+          </button>
         </div>
         @if (error()) {
-          <span class="error-text" id="snap-input-error" role="alert">{{ error() }}</span>
+          <span class="error-text" id="snap-input-error" role="alert">{{
+            error()
+          }}</span>
         }
       </div>
     </div>
@@ -295,7 +320,7 @@ export class ControlsComponent {
   addSnapPoint() {
     const value = this.newPointValue?.trim();
     if (!value) {
-      this.error.set('Enter a valid snap point');
+      this.error.set("Enter a valid snap point");
       return;
     }
 
@@ -308,11 +333,11 @@ export class ControlsComponent {
       // Validate percentage (e.g. 0.5)
       const num = parseFloat(value);
       if (isNaN(num)) {
-        this.error.set('Invalid number: enter a number between 0 and 1');
+        this.error.set("Invalid number: enter a number between 0 and 1");
         return;
       }
       if (num < 0 || num > 1) {
-        this.error.set('Invalid number: value must be between 0 and 1');
+        this.error.set("Invalid number: value must be between 0 and 1");
         return;
       }
       validated = num;
@@ -320,14 +345,14 @@ export class ControlsComponent {
 
     const current = this.snapPoints();
     if (validated && current.includes(validated)) {
-      this.error.set('Duplicate: snap point already exists');
+      this.error.set("Duplicate: snap point already exists");
       return;
     }
 
     if (!validated) return;
     const updated = [...current, validated].sort((a, b) => {
-      const valA = typeof a === 'string' ? parseInt(a, 10) : a * 1000; // Sort roughly
-      const valB = typeof b === 'string' ? parseInt(b, 10) : b * 1000;
+      const valA = typeof a === "string" ? parseInt(a, 10) : a * 1000; // Sort roughly
+      const valB = typeof b === "string" ? parseInt(b, 10) : b * 1000;
       return valA - valB;
     });
 

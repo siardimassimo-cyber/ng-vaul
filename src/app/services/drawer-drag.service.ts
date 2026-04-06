@@ -14,6 +14,7 @@ import { DrawerSnapService } from './drawer-snap.service';
 import { DrawerStateService } from './drawer-state.service';
 
 @Injectable({ providedIn: 'root' })
+
 export class DrawerDragService {
   private readonly state = inject(DrawerStateService);
   private readonly snap = inject(DrawerSnapService);
@@ -107,13 +108,7 @@ export class DrawerDragService {
     }
 
     if (snapPoints && snapPoints.length > 0) {
-      const closedOffset = isVerticalDir
-        ? direction === 'bottom'
-          ? drawerDimension
-          : -drawerDimension
-        : direction === 'right'
-          ? drawerDimension
-          : -drawerDimension;
+      const closedOffset = this.getDimension(isVerticalDir, direction, drawerDimension); 
 
       const closestSnapPointOffset = snapPointsOffset.reduce((prev, curr) =>
         Math.abs(curr - currentPosition) < Math.abs(prev - currentPosition) ? curr : prev,
@@ -220,7 +215,7 @@ export class DrawerDragService {
     const date = new Date();
 
     if (element.tagName === 'SELECT') return false;
-    if (element.hasAttribute('data-vaul-no-drag') || element.closest('[data-vaul-no-drag]')) return false;
+    if (Object.hasOwn(element.dataset, 'vaulNoDrag') || element.closest('[data-vaul-no-drag]')) return false;
 
     const openTime = this.state.openTime();
     if (openTime && date.getTime() - openTime.getTime() < 500) {
@@ -327,8 +322,13 @@ export class DrawerDragService {
     this.state.setIsDragging(false);
     this.dragEndTime.set(new Date());
   }
-
-  ngOnDestroy(): void {
-    // Signals and effects clean up automatically; method kept for backward compatibility
+  getDimension(isVerticalDir: boolean, direction: DrawerDirectionType, drawerDimension: number): number {
+      if(isVerticalDir){
+          return direction === 'bottom' ? drawerDimension : -drawerDimension;
+      }
+      if(direction === 'right'){
+          return drawerDimension;
+      }
+      return -drawerDimension;
   }
 }
